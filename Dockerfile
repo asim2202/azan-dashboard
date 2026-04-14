@@ -42,9 +42,25 @@ COPY --from=builder /app/public ./public
 RUN mkdir -p /app/config /app/data /app/public/audio
 COPY --from=builder /app/config ./config
 
-# Entrypoint script to start go2rtc + node
-COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+# Create entrypoint inline to avoid CRLF issues from Windows
+RUN printf '#!/bin/sh\n\
+# Write default go2rtc config\n\
+cat > /tmp/go2rtc.yaml << GOEOF\n\
+api:\n\
+  listen: ":1984"\n\
+rtsp:\n\
+  listen: ":8554"\n\
+streams: {}\n\
+GOEOF\n\
+\n\
+# Start go2rtc in background\n\
+go2rtc -config /tmp/go2rtc.yaml &\n\
+\n\
+# Wait for go2rtc to start\n\
+sleep 1\n\
+\n\
+# Start Next.js\n\
+exec node server.js\n' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 EXPOSE 3000 1984
 

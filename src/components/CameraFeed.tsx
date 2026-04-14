@@ -13,16 +13,25 @@ export default function CameraFeed({ config }: CameraFeedProps) {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Resolve the stream URL - for RTSP, go through the proxy API
   useEffect(() => {
-    if (!config.enabled || !config.url) return;
+    if (!config.enabled || !config.url) {
+      setLoading(false);
+      return;
+    }
 
     if (config.url.startsWith("rtsp://") || config.url.startsWith("rtsps://")) {
-      // RTSP URL - register with go2rtc via our API and get MJPEG URL
+      // RTSP - register with go2rtc and build URL using browser hostname
       fetch("/api/camera-stream")
         .then((r) => r.json())
         .then((data) => {
-          if (data.streamUrl) {
+          if (data.source === "go2rtc" && data.streamName) {
+            // Build URL using the browser's hostname so it reaches the exposed go2rtc port
+            const host = window.location.hostname;
+            const port = data.go2rtcPort || 1984;
+            setStreamUrl(`http://${host}:${port}/api/stream.mjpeg?src=${data.streamName}`);
+            setFeedType("image");
+            setError(false);
+          } else if (data.streamUrl) {
             setStreamUrl(data.streamUrl);
             setFeedType(data.type || "image");
             setError(false);
@@ -40,13 +49,14 @@ export default function CameraFeed({ config }: CameraFeedProps) {
     }
   }, [config.url, config.enabled, config.type]);
 
-  // For snapshot mode: refresh at interval
+  // Snapshot refresh
   useEffect(() => {
     if (!streamUrl || feedType !== "image" || config.refreshInterval <= 0) return;
 
+    const baseUrl = config.url.startsWith("rtsp") ? streamUrl : config.url;
     const interval = setInterval(() => {
-      const separator = streamUrl.includes("?") ? "&" : "?";
-      setStreamUrl(`${config.url}${separator}t=${Date.now()}`);
+      const separator = baseUrl.includes("?") ? "&" : "?";
+      setStreamUrl(`${baseUrl}${separator}t=${Date.now()}`);
     }, config.refreshInterval * 1000);
 
     return () => clearInterval(interval);

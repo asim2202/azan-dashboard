@@ -2,48 +2,58 @@ import { getConfig } from "@/lib/config";
 
 const GO2RTC_API = "http://127.0.0.1:1984";
 
-// Register/update RTSP stream with go2rtc and return the MJPEG URL
-export async function GET() {
+export async function GET(request: Request) {
   const config = getConfig();
 
   if (!config.camera?.enabled || !config.camera?.url) {
     return Response.json({ error: "Camera not configured" }, { status: 404 });
   }
 
-  const rtspUrl = config.camera.url;
+  const cameraUrl = config.camera.url;
 
-  // If the URL is already HTTP (MJPEG, snapshot, etc), just pass it through
-  if (rtspUrl.startsWith("http")) {
+  // If the URL is already HTTP (MJPEG, snapshot, etc), pass it through
+  if (cameraUrl.startsWith("http")) {
     return Response.json({
-      streamUrl: rtspUrl,
+      streamUrl: cameraUrl,
       type: config.camera.type,
       source: "direct",
     });
   }
 
-  // For RTSP URLs, register with go2rtc and return the MJPEG proxy URL
+  // For RTSP/RTSPS URLs, register with go2rtc and tell browser to use go2rtc port
   try {
-    // Add/update the stream in go2rtc via its API
-    const addRes = await fetch(
-      `${GO2RTC_API}/api/streams?dst=frontdoor&src=${encodeURIComponent(rtspUrl)}`,
-      { method: "PUT" }
-    );
+    // Register stream with go2rtc via its API
+    // go2rtc API: PUT body with stream source URLs
+    const addRes = await fetch(`${GO2RTC_API}/api/streams`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "frontdoor", src: cameraUrl }),
+    });
 
+    // Fallback: try query param format if JSON body didn't work
     if (!addRes.ok) {
-      console.error("[Camera] go2rtc stream registration failed:", addRes.status);
-      return Response.json({ error: "Failed to register stream with go2rtc" }, { status: 500 });
+      const fallbackRes = await fetch(
+        `${GO2RTC_API}/api/streams?name=frontdoor&src=${encodeURIComponent(cameraUrl)}`,
+        { method: "PUT" }
+      );
+      if (!fallbackRes.ok) {
+        const text = await fallbackRes.text();
+        console.error("[Camera] go2rtc registration failed:", fallbackRes.status, text);
+        return Response.json({ error: "Failed to register stream" }, { status: 500 });
+      }
     }
 
+    // Return go2rtc info - browser will construct URL using its own hostname
     return Response.json({
-      streamUrl: `${GO2RTC_API}/api/stream.mjpeg?src=frontdoor`,
-      type: "image",
       source: "go2rtc",
+      streamName: "frontdoor",
+      go2rtcPort: 1984,
+      type: "image",
     });
   } catch (err) {
     console.error("[Camera] go2rtc not available:", err);
     return Response.json({
       error: "go2rtc not running. Use an HTTP URL instead of RTSP, or run in Docker.",
-      streamUrl: null,
     }, { status: 503 });
   }
 }

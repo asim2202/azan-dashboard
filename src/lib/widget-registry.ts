@@ -1,5 +1,5 @@
 import type { WidgetDefinition } from "@/types/widget";
-import type { WidgetConfig, WidgetSize } from "@/types/config";
+import type { WidgetGridItem } from "@/types/config";
 
 export const WIDGET_DEFINITIONS: WidgetDefinition[] = [
   {
@@ -88,20 +88,17 @@ export function getWidgetDef(id: string): WidgetDefinition | undefined {
   return WIDGET_DEFINITIONS.find((w) => w.id === id);
 }
 
-export function getColSpan(id: string, size: WidgetSize): number {
-  const def = getWidgetDef(id);
-  return def?.colSpan[size] ?? 1;
-}
-
-export const DEFAULT_WIDGETS: WidgetConfig[] = [
-  { id: "clock", size: "L", enabled: true },
-  { id: "next-prayer", size: "M", enabled: true },
-  { id: "prayer-times", size: "L", enabled: true },
-  { id: "prayer-progress", size: "M", enabled: true },
-  { id: "weather", size: "S", enabled: true },
-  { id: "camera", size: "M", enabled: true },
-  { id: "hijri-date", size: "S", enabled: true },
-  { id: "quran-verse", size: "M", enabled: false },
-  { id: "analog-clock", size: "M", enabled: false },
-  { id: "iqama-countdown", size: "S", enabled: false },
+// Default grid layout - 6 columns
+// x,y = position, w = width in cols, h = height in row units
+export const DEFAULT_GRID_WIDGETS: WidgetGridItem[] = [
+  { i: "clock",           x: 0, y: 0, w: 4, h: 2, enabled: true },
+  { i: "next-prayer",     x: 4, y: 0, w: 2, h: 2, enabled: true },
+  { i: "prayer-times",    x: 0, y: 2, w: 4, h: 3, enabled: true },
+  { i: "weather",         x: 4, y: 2, w: 2, h: 1, enabled: true },
+  { i: "hijri-date",      x: 4, y: 3, w: 2, h: 1, enabled: true },
+  { i: "prayer-progress", x: 4, y: 4, w: 2, h: 1, enabled: true },
+  { i: "camera",          x: 0, y: 5, w: 3, h: 2, enabled: false },
+  { i: "quran-verse",     x: 3, y: 5, w: 3, h: 2, enabled: false },
+  { i: "analog-clock",    x: 0, y: 7, w: 2, h: 2, enabled: false },
+  { i: "iqama-countdown", x: 2, y: 7, w: 2, h: 1, enabled: false },
 ];

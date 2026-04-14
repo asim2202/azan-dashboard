@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import type { AppConfig } from "@/types/config";
+import { DEFAULT_GRID_WIDGETS } from "@/lib/widget-registry";
 
 const CONFIG_PATH = path.join(process.cwd(), "config", "default.json");
 
@@ -39,18 +40,7 @@ const DEFAULT_CONFIG: AppConfig = {
     refreshInterval: 0,
   },
   layout: {
-    widgets: [
-      { id: "clock", size: "L", enabled: true },
-      { id: "next-prayer", size: "M", enabled: true },
-      { id: "prayer-times", size: "L", enabled: true },
-      { id: "prayer-progress", size: "M", enabled: true },
-      { id: "weather", size: "S", enabled: true },
-      { id: "hijri-date", size: "S", enabled: true },
-      { id: "camera", size: "M", enabled: false },
-      { id: "quran-verse", size: "M", enabled: false },
-      { id: "analog-clock", size: "M", enabled: false },
-      { id: "iqama-countdown", size: "S", enabled: false },
-    ],
+    widgets: DEFAULT_GRID_WIDGETS,
   },
   dataSources: {
     iacadEnabled: true,

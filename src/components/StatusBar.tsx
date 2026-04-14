@@ -7,6 +7,7 @@ interface StatusBarProps {
   lastUpdated: string | null;
   audioReady: boolean;
   audioEnabled: boolean;
+  onEditLayout?: () => void;
 }
 
 export default function StatusBar({
@@ -14,6 +15,7 @@ export default function StatusBar({
   lastUpdated,
   audioReady,
   audioEnabled,
+  onEditLayout,
 }: StatusBarProps) {
   const sourceLabel = source === "iacad" ? "IACAD" : source === "calculated" ? "Calculated" : "Loading...";
 
@@ -34,12 +36,22 @@ export default function StatusBar({
       <div className="flex items-center gap-3">
         {audioEnabled ? (
           audioReady ? (
-            <span style={{ color: "var(--status-green)" }} title="Audio ready">&#x1F50A; Ready</span>
+            <span style={{ color: "var(--status-green)" }} title="Audio ready">&#x1F50A;</span>
           ) : (
-            <span style={{ color: "var(--status-amber)" }} title="Tap to enable audio">&#x1F507; Tap to enable</span>
+            <span style={{ color: "var(--status-amber)" }} title="Tap to enable audio">&#x1F507;</span>
           )
         ) : (
-          <span title="Audio disabled">&#x1F507; Off</span>
+          <span title="Audio disabled">&#x1F507;</span>
+        )}
+        {onEditLayout && (
+          <button
+            onClick={onEditLayout}
+            className="hover:opacity-80 transition-opacity"
+            style={{ color: "var(--text-faint)" }}
+            title="Edit Layout"
+          >
+            &#x270F;&#xFE0F;
+          </button>
         )}
         <Link
           href="/settings"

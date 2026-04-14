@@ -36,14 +36,26 @@ export interface CameraConfig {
 
 export type WidgetSize = "S" | "M" | "L";
 
-export interface WidgetConfig {
-  id: string;
-  size: WidgetSize;
+// Grid position for react-grid-layout
+export interface WidgetGridItem {
+  i: string;    // widget id
+  x: number;    // grid column
+  y: number;    // grid row
+  w: number;    // width in grid units
+  h: number;    // height in grid units
   enabled: boolean;
 }
 
 export interface LayoutConfig {
-  widgets: WidgetConfig[];
+  widgets: WidgetGridItem[];
+  editMode?: boolean;
+}
+
+// Keep old type for backward compat in settings
+export interface WidgetConfig {
+  id: string;
+  size: WidgetSize;
+  enabled: boolean;
 }
 
 export interface AppConfig {

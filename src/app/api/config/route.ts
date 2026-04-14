@@ -5,7 +5,8 @@ import type { AppConfig } from "@/types/config";
 const GO2RTC_CONFIG = "/tmp/go2rtc.yaml";
 
 function updateGo2rtcConfig(cameraUrl: string) {
-  const streamLine = cameraUrl ? `\n  frontdoor: ${cameraUrl}` : "";
+  // URL must be quoted in YAML to handle special chars like ? & =
+  const streamLine = cameraUrl ? `\n  frontdoor: "${cameraUrl}"` : "";
   const yaml = `api:
   listen: ":1984"
 rtsp:

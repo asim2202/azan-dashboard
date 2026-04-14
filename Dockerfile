@@ -42,21 +42,30 @@ COPY --from=builder /app/public ./public
 RUN mkdir -p /app/config /app/data /app/public/audio
 COPY --from=builder /app/config ./config
 
+# Install jq for JSON parsing in entrypoint
+RUN apk add --no-cache jq
+
 # Create entrypoint inline to avoid CRLF issues from Windows
 RUN printf '#!/bin/sh\n\
-# Write default go2rtc config\n\
-cat > /tmp/go2rtc.yaml << GOEOF\n\
-api:\n\
-  listen: ":1984"\n\
-rtsp:\n\
-  listen: ":8554"\n\
-streams: {}\n\
-GOEOF\n\
+\n\
+# Read camera URL from saved config if it exists\n\
+CAMERA_URL=""\n\
+if [ -f /app/config/default.json ]; then\n\
+  CAMERA_URL=$(jq -r ".camera.url // empty" /app/config/default.json 2>/dev/null)\n\
+  CAMERA_ENABLED=$(jq -r ".camera.enabled // false" /app/config/default.json 2>/dev/null)\n\
+fi\n\
+\n\
+# Write go2rtc config\n\
+if [ -n "$CAMERA_URL" ] && [ "$CAMERA_ENABLED" = "true" ]; then\n\
+  printf "api:\\n  listen: \\":1984\\"\\nrtsp:\\n  listen: \\":8554\\"\\nstreams:\\n  frontdoor: %s\\n" "$CAMERA_URL" > /tmp/go2rtc.yaml\n\
+  echo "[entrypoint] go2rtc configured with stream: $CAMERA_URL"\n\
+else\n\
+  printf "api:\\n  listen: \\":1984\\"\\nrtsp:\\n  listen: \\":8554\\"\\nstreams: {}\\n" > /tmp/go2rtc.yaml\n\
+  echo "[entrypoint] go2rtc started with no streams"\n\
+fi\n\
 \n\
 # Start go2rtc in background\n\
 go2rtc -config /tmp/go2rtc.yaml &\n\
-\n\
-# Wait for go2rtc to start\n\
 sleep 1\n\
 \n\
 # Start Next.js\n\

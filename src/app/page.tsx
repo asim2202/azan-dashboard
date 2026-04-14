@@ -203,7 +203,7 @@ export default function Home() {
 
   return (
     <main
-      className={`${themeClass} h-screen flex overflow-hidden transition-colors duration-1000`}
+      className={`${themeClass} h-screen flex overflow-hidden select-none transition-colors duration-1000`}
       style={{ background: `linear-gradient(to bottom, var(--bg-main), var(--bg-main-via), var(--bg-main))` }}
     >
       {/* Audio unlock overlay */}

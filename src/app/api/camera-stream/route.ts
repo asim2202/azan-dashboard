@@ -20,24 +20,25 @@ export async function GET() {
     });
   }
 
-  // RTSP/RTSPS - check go2rtc and register stream
+  // RTSP/RTSPS - check go2rtc is running and stream exists
   try {
-    // Check go2rtc is running
-    const ping = await fetch(`${GO2RTC_API}/api/streams`, {
+    const streamsRes = await fetch(`${GO2RTC_API}/api/streams`, {
       signal: AbortSignal.timeout(2000),
     });
-    if (!ping.ok) throw new Error("go2rtc not responding");
+    if (!streamsRes.ok) throw new Error("go2rtc not responding");
 
-    // Register/update the stream (PUT with plain text body = stream source URL)
-    await fetch(`${GO2RTC_API}/api/streams?src=frontdoor`, {
-      method: "PUT",
-      body: cameraUrl,
-    });
-
-    // Verify stream was added
-    const streamsRes = await fetch(`${GO2RTC_API}/api/streams`);
     const streams = await streamsRes.json();
     console.log("[Camera] go2rtc streams:", JSON.stringify(streams));
+
+    // Stream should already be configured via go2rtc.yaml from entrypoint
+    // If not present, try to add it via API query params
+    if (!streams.frontdoor) {
+      console.log("[Camera] Stream not found, adding via API...");
+      await fetch(
+        `${GO2RTC_API}/api/streams?dst=frontdoor&src=${encodeURIComponent(cameraUrl)}`,
+        { method: "PUT" }
+      );
+    }
 
     return Response.json({
       source: "go2rtc",
@@ -48,7 +49,7 @@ export async function GET() {
   } catch (err) {
     console.error("[Camera] go2rtc error:", err);
     return Response.json({
-      error: "go2rtc not available. Restart the container after setting camera URL.",
+      error: "go2rtc not available",
     }, { status: 503 });
   }
 }

@@ -43,15 +43,14 @@ export async function POST(request: Request) {
     if (camUrl.startsWith("rtsp") && body.camera?.enabled) {
       updateGo2rtcConfig(camUrl);
 
-      // Tell go2rtc to reload by restarting its stream
+      // Tell go2rtc to add/update the stream
       try {
-        await fetch("http://127.0.0.1:1984/api/streams?src=frontdoor", {
+        await fetch(`http://127.0.0.1:1984/api/streams?dst=frontdoor&src=${encodeURIComponent(camUrl)}`, {
           method: "PUT",
-          body: camUrl,
         });
         console.log("[go2rtc] Stream registered via API");
       } catch {
-        console.log("[go2rtc] API registration failed - stream will load from config on next restart");
+        console.log("[go2rtc] API registration failed - restart container to apply");
       }
     }
 

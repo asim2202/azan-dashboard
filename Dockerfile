@@ -57,7 +57,7 @@ fi\n\
 \n\
 # Write go2rtc config\n\
 if [ -n "$CAMERA_URL" ] && [ "$CAMERA_ENABLED" = "true" ]; then\n\
-  printf "api:\\n  listen: \\":1984\\"\\nrtsp:\\n  listen: \\":8554\\"\\nstreams:\\n  frontdoor:\\n    - \\"exec:ffmpeg -rtsp_transport tcp -i %s -c:v copy -c:a copy -f rtsp rtsp://localhost:8554/frontdoor\\"\\n" "$CAMERA_URL" > /tmp/go2rtc.yaml\n\
+  printf "api:\\n  listen: \\":1984\\"\\nrtsp:\\n  listen: \\":8554\\"\\nstreams:\\n  frontdoor:\\n    - \\"exec:ffmpeg -hide_banner -rtsp_transport tcp -i %s -c:v copy -an -f mpegts -\\"\\n" "$CAMERA_URL" > /tmp/go2rtc.yaml\n\
   echo "[entrypoint] go2rtc configured with exec:ffmpeg stream: $CAMERA_URL"\n\
 else\n\
   printf "api:\\n  listen: \\":1984\\"\\nrtsp:\\n  listen: \\":8554\\"\\nstreams: {}\\n" > /tmp/go2rtc.yaml\n\

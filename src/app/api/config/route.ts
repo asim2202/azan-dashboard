@@ -5,9 +5,9 @@ import type { AppConfig } from "@/types/config";
 const GO2RTC_CONFIG = "/tmp/go2rtc.yaml";
 
 function updateGo2rtcConfig(cameraUrl: string) {
-  // Use exec:ffmpeg to pull the RTSP stream - go2rtc's native client fails on some RTSPS
+  // Use exec:ffmpeg to pull RTSPS and output to stdout as RTSP for go2rtc to consume
   const streamSource = cameraUrl
-    ? `\n  frontdoor:\n    - "exec:ffmpeg -rtsp_transport tcp -i ${cameraUrl} -c:v copy -c:a copy -f rtsp rtsp://localhost:8554/frontdoor"`
+    ? `\n  frontdoor:\n    - "exec:ffmpeg -hide_banner -rtsp_transport tcp -i ${cameraUrl} -c:v copy -an -f mpegts -"`
     : "";
   const yaml = `api:
   listen: ":1984"

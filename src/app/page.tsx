@@ -1,8 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { ResponsiveGridLayout } = require("react-grid-layout");
+import { useState, useEffect, useMemo } from "react";
 import WidgetWrapper from "@/components/WidgetWrapper";
 import StatusBar from "@/components/StatusBar";
 import AudioUnlockButton from "@/components/AudioUnlockButton";
@@ -11,13 +9,10 @@ import { useCurrentTime } from "@/hooks/useCurrentTime";
 import { usePrayerTimes } from "@/hooks/usePrayerTimes";
 import { useWeather } from "@/hooks/useWeather";
 import { useAzan } from "@/hooks/useAzan";
-import { WIDGET_DEFINITIONS, DEFAULT_GRID_WIDGETS } from "@/lib/widget-registry";
-import type { AppConfig, WidgetGridItem } from "@/types/config";
+import { DEFAULT_GRID_WIDGETS } from "@/lib/widget-registry";
+import type { AppConfig } from "@/types/config";
 import type { WidgetProps } from "@/types/widget";
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type RGLLayout = any;
 
-// Widget imports
 import ClockWidget from "@/components/widgets/ClockWidget";
 import NextPrayerWidget from "@/components/widgets/NextPrayerWidget";
 import PrayerTimesWidget from "@/components/widgets/PrayerTimesWidget";
@@ -28,19 +23,6 @@ import IqamaCountdownWidget from "@/components/widgets/IqamaCountdownWidget";
 import QuranVerseWidget from "@/components/widgets/QuranVerseWidget";
 import HijriDateWidget from "@/components/widgets/HijriDateWidget";
 import PrayerProgressWidget from "@/components/widgets/PrayerProgressWidget";
-
-const WIDGET_COMPONENTS: Record<string, React.ComponentType<WidgetProps>> = {
-  "clock": ClockWidget,
-  "next-prayer": NextPrayerWidget,
-  "prayer-times": PrayerTimesWidget,
-  "weather": WeatherWidgetComponent,
-  "camera": CameraWidget,
-  "analog-clock": AnalogClockWidget,
-  "iqama-countdown": IqamaCountdownWidget,
-  "quran-verse": QuranVerseWidget,
-  "hijri-date": HijriDateWidget,
-  "prayer-progress": PrayerProgressWidget,
-};
 
 const DEFAULT_CONFIG: AppConfig = {
   location: { latitude: 25.2048, longitude: 55.2708, city: "Dubai", timezone: "Asia/Dubai" },
@@ -53,12 +35,6 @@ const DEFAULT_CONFIG: AppConfig = {
   layout: { widgets: DEFAULT_GRID_WIDGETS },
   dataSources: { iacadEnabled: true, weatherEnabled: true },
 };
-
-function widgetToSize(w: number): "S" | "M" | "L" {
-  if (w <= 2) return "S";
-  if (w <= 3) return "M";
-  return "L";
-}
 
 function computeTheme(
   setting: "auto" | "dark" | "light",
@@ -75,17 +51,18 @@ function computeTheme(
   return "theme-dark";
 }
 
-function gridItemsToLayout(items: WidgetGridItem[]): RGLLayout[] {
-  return items
-    .filter((w) => w.enabled)
-    .map((w) => ({ i: w.i, x: w.x, y: w.y, w: w.w, h: w.h, minW: 1, minH: 1 }));
+// Shared card style
+function Card({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+  return (
+    <div className={`rounded-xl overflow-hidden ${className}`} style={{ background: "var(--card-bg)", ...style }}>
+      <WidgetWrapper>{children}</WidgetWrapper>
+    </div>
+  );
 }
 
 export default function Home() {
   const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   const timezone = config.location.timezone;
   const { time: currentTime, mounted } = useCurrentTime();
@@ -107,23 +84,9 @@ export default function Home() {
     config.audio.defaultAzan, config.audio.fajrAzan, config.audio.iqamaSound, config.audio.volume
   );
 
-  // Container width for grid layout
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(1200);
-
   useEffect(() => {
     fetch("/api/config").then((r) => r.json()).then(setConfig).catch(() => {});
   }, []);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const obs = new ResizeObserver((entries) => {
-      for (const entry of entries) setContainerWidth(entry.contentRect.width);
-    });
-    obs.observe(containerRef.current);
-    setContainerWidth(containerRef.current.offsetWidth);
-    return () => obs.disconnect();
-  }, [mounted]);
 
   // Wake lock
   useEffect(() => {
@@ -142,41 +105,6 @@ export default function Home() {
     return () => clearTimeout(t);
   }, []);
 
-  const widgets = config.layout?.widgets || DEFAULT_GRID_WIDGETS;
-  const enabledWidgets = widgets.filter((w) => w.enabled);
-  const layout = gridItemsToLayout(widgets).map((item: RGLLayout) => ({
-    ...item,
-    static: !editMode,
-  }));
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleLayoutChange = useCallback((currentLayout: any, allLayouts: any) => {
-    if (!editMode) return;
-    // currentLayout is a Layout (readonly array of LayoutItem)
-    const items = Array.from(currentLayout) as { i: string; x: number; y: number; w: number; h: number }[];
-    setConfig((prev) => {
-      const updatedWidgets = prev.layout.widgets.map((w) => {
-        const item = items.find((l) => l.i === w.i);
-        if (item) return { ...w, x: item.x, y: item.y, w: item.w, h: item.h };
-        return w;
-      });
-      return { ...prev, layout: { ...prev.layout, widgets: updatedWidgets } };
-    });
-  }, [editMode]);
-
-  const saveLayout = useCallback(async () => {
-    setSaving(true);
-    try {
-      await fetch("/api/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
-      });
-    } catch {}
-    setSaving(false);
-    setEditMode(false);
-  }, [config]);
-
   if (!mounted) {
     return (
       <main className="theme-dark h-screen flex items-center justify-center" style={{ background: "var(--bg-main)" }}>
@@ -188,19 +116,15 @@ export default function Home() {
     );
   }
 
-  const widgetProps: WidgetProps = {
-    size: "M",
-    currentTime,
-    timezone,
-    config,
-    prayerData,
-    nextPrayer,
-    weather,
+  const wp: WidgetProps = {
+    size: "M", currentTime, timezone, config, prayerData, nextPrayer, weather,
   };
+
+  const cameraOn = config.camera?.enabled && config.camera?.url;
 
   return (
     <main
-      className={`${themeClass} h-screen flex flex-col overflow-auto select-none transition-colors duration-1000 ${editMode ? "edit-mode" : ""}`}
+      className={`${themeClass} h-screen flex flex-col overflow-hidden select-none transition-colors duration-1000`}
       style={{ background: `linear-gradient(to bottom, var(--bg-main), var(--bg-main-via), var(--bg-main))` }}
     >
       {/* Overlays */}
@@ -217,61 +141,112 @@ export default function Home() {
         />
       )}
 
-      {/* Edit mode toolbar */}
-      {editMode && (
-        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2" style={{ background: "var(--accent)", color: "#000" }}>
-          <span className="text-sm font-medium">Edit Mode: Drag to move, resize from corners</span>
-          <div className="flex gap-2">
-            <button onClick={() => setEditMode(false)} className="px-3 py-1 text-sm rounded bg-black/20 hover:bg-black/30">Cancel</button>
-            <button onClick={saveLayout} disabled={saving} className="px-3 py-1 text-sm rounded bg-black/30 hover:bg-black/40 font-medium">
-              {saving ? "Saving..." : "Save Layout"}
-            </button>
+      {/* ===== LANDSCAPE LAYOUT ===== */}
+      <div className="hidden landscape:flex flex-1 min-h-0 p-3 gap-3">
+        {/* Left column: dashboard */}
+        <div className="flex-1 flex flex-col gap-3 min-w-0">
+          {/* Row 1: Clock + Next Prayer */}
+          <div className="flex gap-3" style={{ flex: "0 0 auto" }}>
+            <Card className="flex-[3] p-4">
+              <ClockWidget {...wp} size="L" />
+            </Card>
+            <Card className="flex-[2] p-4">
+              <NextPrayerWidget {...wp} size="M" />
+            </Card>
+          </div>
+
+          {/* Row 2: Prayer Times (fills remaining space) */}
+          <Card className="flex-1 p-4">
+            <PrayerTimesWidget {...wp} size="L" />
+          </Card>
+
+          {/* Row 3: Weather + Hijri + Progress */}
+          <div className="flex gap-3" style={{ flex: "0 0 auto" }}>
+            <Card className="flex-1 p-3">
+              <WeatherWidgetComponent {...wp} size="S" />
+            </Card>
+            <Card className="flex-1 p-3">
+              <HijriDateWidget {...wp} size="S" />
+            </Card>
+            <Card className="flex-1 p-3">
+              <PrayerProgressWidget {...wp} size="S" />
+            </Card>
           </div>
         </div>
-      )}
 
-      {/* Widget Grid */}
-      <div className="flex-1 p-2 sm:p-3" ref={containerRef}>
-        <ResponsiveGridLayout
-          className="layout"
-          width={containerWidth}
-          layouts={{ lg: layout, md: layout, sm: layout }}
-          breakpoints={{ lg: 1200, md: 768, sm: 0 }}
-          cols={{ lg: 6, md: 4, sm: 2 }}
-          rowHeight={80}
-          onLayoutChange={handleLayoutChange}
-          compactType="vertical"
-          margin={[10, 10]}
-          useCSSTransforms
-        >
-          {enabledWidgets.map((wc) => {
-            const Component = WIDGET_COMPONENTS[wc.i];
-            if (!Component) return <div key={wc.i} />;
-            const size = widgetToSize(wc.w);
+        {/* Right column: Camera + extras */}
+        <div className="flex flex-col gap-3" style={{ width: cameraOn ? "35%" : "20%" }}>
+          {cameraOn && (
+            <Card className="flex-1">
+              <CameraWidget {...wp} size="L" />
+            </Card>
+          )}
+          {!cameraOn && (
+            <Card className="flex-1 p-4">
+              <AnalogClockWidget {...wp} size="L" />
+            </Card>
+          )}
+          <Card className="p-3" style={{ flex: "0 0 auto" }}>
+            <QuranVerseWidget {...wp} size="M" />
+          </Card>
+          <Card className="p-3" style={{ flex: "0 0 auto" }}>
+            <IqamaCountdownWidget {...wp} size="M" />
+          </Card>
+        </div>
+      </div>
 
-            return (
-              <div key={wc.i} className="widget-card rounded-xl overflow-hidden" style={{ background: "var(--card-bg)" }}>
-                <WidgetWrapper>
-                  <div className="h-full p-3 sm:p-4">
-                    <Component {...widgetProps} size={size} />
-                  </div>
-                </WidgetWrapper>
-              </div>
-            );
-          })}
-        </ResponsiveGridLayout>
+      {/* ===== PORTRAIT LAYOUT ===== */}
+      <div className="landscape:hidden flex-1 flex flex-col gap-2 p-3 overflow-auto min-h-0">
+        {/* Clock */}
+        <Card className="p-4">
+          <ClockWidget {...wp} size="M" />
+        </Card>
+
+        {/* Next Prayer */}
+        <Card className="p-3">
+          <NextPrayerWidget {...wp} size="M" />
+        </Card>
+
+        {/* Prayer Times */}
+        <Card className="p-3">
+          <PrayerTimesWidget {...wp} size="M" />
+        </Card>
+
+        {/* Progress bar */}
+        <Card className="p-3">
+          <PrayerProgressWidget {...wp} size="S" />
+        </Card>
+
+        {/* Camera */}
+        {cameraOn && (
+          <Card className="h-48 sm:h-56">
+            <CameraWidget {...wp} size="M" />
+          </Card>
+        )}
+
+        {/* Bottom row: Weather + Hijri */}
+        <div className="flex gap-2">
+          <Card className="flex-1 p-3">
+            <WeatherWidgetComponent {...wp} size="S" />
+          </Card>
+          <Card className="flex-1 p-3">
+            <HijriDateWidget {...wp} size="S" />
+          </Card>
+        </div>
+
+        {/* Quran */}
+        <Card className="p-3">
+          <QuranVerseWidget {...wp} size="M" />
+        </Card>
       </div>
 
       {/* Status Bar */}
-      <div className="flex-shrink-0">
-        <StatusBar
-          source={prayerData?.source || null}
-          lastUpdated={prayerData?.lastUpdated || null}
-          audioReady={audioUnlocked}
-          audioEnabled={config.audio.enabled}
-          onEditLayout={() => setEditMode(!editMode)}
-        />
-      </div>
+      <StatusBar
+        source={prayerData?.source || null}
+        lastUpdated={prayerData?.lastUpdated || null}
+        audioReady={audioUnlocked}
+        audioEnabled={config.audio.enabled}
+      />
     </main>
   );
 }

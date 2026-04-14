@@ -1,0 +1,14 @@
+services:
+  azan-clock:
+    build: .
+    container_name: azan-clock
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./public/audio:/app/public/audio
+    environment:
+      - TZ=Asia/Dubai
+      - NODE_ENV=production
+    restart: unless-stopped

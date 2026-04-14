@@ -31,7 +31,19 @@ export interface CameraConfig {
   enabled: boolean;
   url: string;
   type: "image" | "iframe";
-  refreshInterval: number; // 0 = live stream, >0 = refresh every N seconds
+  refreshInterval: number;
+}
+
+export type WidgetSize = "S" | "M" | "L";
+
+export interface WidgetConfig {
+  id: string;
+  size: WidgetSize;
+  enabled: boolean;
+}
+
+export interface LayoutConfig {
+  widgets: WidgetConfig[];
 }
 
 export interface AppConfig {
@@ -42,6 +54,7 @@ export interface AppConfig {
   audio: AudioConfig;
   display: DisplayConfig;
   camera: CameraConfig;
+  layout: LayoutConfig;
   dataSources: {
     iacadEnabled: boolean;
     weatherEnabled: boolean;

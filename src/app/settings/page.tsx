@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import type { AppConfig } from "@/types/config";
+import type { AppConfig, WidgetConfig } from "@/types/config";
+import { WIDGET_DEFINITIONS, DEFAULT_WIDGETS } from "@/lib/widget-registry";
 
 interface AudioFile {
   name: string;
@@ -429,6 +430,77 @@ export default function SettingsPage() {
               <li>Snapshot: http://camera-ip/snap.jpg (set refresh to 2-5s)</li>
             </ul>
           </div>
+        </Section>
+
+        {/* Layout / Widgets */}
+        <Section title="Dashboard Widgets">
+          <p className="text-xs text-white/40 mb-3">Toggle widgets, set sizes (S/M/L), and reorder with arrows. Order here = order on dashboard.</p>
+          <div className="space-y-2">
+            {(config.layout?.widgets || DEFAULT_WIDGETS).map((wc, idx) => {
+              const def = WIDGET_DEFINITIONS.find((d) => d.id === wc.id);
+              if (!def) return null;
+
+              const moveUp = () => {
+                if (idx === 0) return;
+                const widgets = [...(config.layout?.widgets || DEFAULT_WIDGETS)];
+                [widgets[idx - 1], widgets[idx]] = [widgets[idx], widgets[idx - 1]];
+                updateConfig("layout.widgets", widgets);
+              };
+              const moveDown = () => {
+                const widgets = [...(config.layout?.widgets || DEFAULT_WIDGETS)];
+                if (idx >= widgets.length - 1) return;
+                [widgets[idx], widgets[idx + 1]] = [widgets[idx + 1], widgets[idx]];
+                updateConfig("layout.widgets", widgets);
+              };
+              const toggleEnabled = () => {
+                const widgets = [...(config.layout?.widgets || DEFAULT_WIDGETS)];
+                widgets[idx] = { ...widgets[idx], enabled: !widgets[idx].enabled };
+                updateConfig("layout.widgets", widgets);
+              };
+              const changeSize = (size: string) => {
+                const widgets = [...(config.layout?.widgets || DEFAULT_WIDGETS)];
+                widgets[idx] = { ...widgets[idx], size: size as WidgetConfig["size"] };
+                updateConfig("layout.widgets", widgets);
+              };
+
+              return (
+                <div key={wc.id} className={`flex items-center gap-3 px-3 py-2 rounded-lg ${wc.enabled ? "bg-white/5" : "bg-white/[0.02] opacity-50"}`}>
+                  {/* Reorder arrows */}
+                  <div className="flex flex-col gap-0.5">
+                    <button onClick={moveUp} className="text-white/30 hover:text-white/60 text-xs leading-none" disabled={idx === 0}>&uarr;</button>
+                    <button onClick={moveDown} className="text-white/30 hover:text-white/60 text-xs leading-none" disabled={idx === (config.layout?.widgets || DEFAULT_WIDGETS).length - 1}>&darr;</button>
+                  </div>
+
+                  {/* Toggle */}
+                  <Toggle checked={wc.enabled} onChange={toggleEnabled} />
+
+                  {/* Name */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white/80 truncate">{def.name}</p>
+                    <p className="text-xs text-white/30 truncate">{def.description}</p>
+                  </div>
+
+                  {/* Size selector */}
+                  <select
+                    value={wc.size}
+                    onChange={(e) => changeSize(e.target.value)}
+                    className="text-center text-xs py-1 px-2 rounded-md flex-shrink-0"
+                    style={{ width: "60px", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)", color: "white" }}
+                  >
+                    {def.sizes.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+              );
+            })}
+          </div>
+          <button
+            onClick={() => updateConfig("layout.widgets", DEFAULT_WIDGETS)}
+            className="mt-3 text-xs text-white/40 hover:text-white/60 underline"
+          >
+            Reset to Default Layout
+          </button>
         </Section>
 
         {/* Data Sources */}

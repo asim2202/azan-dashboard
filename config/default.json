@@ -32,6 +32,20 @@
     "type": "image",
     "refreshInterval": 0
   },
+  "layout": {
+    "widgets": [
+      { "id": "clock", "size": "L", "enabled": true },
+      { "id": "next-prayer", "size": "M", "enabled": true },
+      { "id": "prayer-times", "size": "L", "enabled": true },
+      { "id": "prayer-progress", "size": "M", "enabled": true },
+      { "id": "weather", "size": "S", "enabled": true },
+      { "id": "hijri-date", "size": "S", "enabled": true },
+      { "id": "camera", "size": "M", "enabled": false },
+      { "id": "quran-verse", "size": "M", "enabled": false },
+      { "id": "analog-clock", "size": "M", "enabled": false },
+      { "id": "iqama-countdown", "size": "S", "enabled": false }
+    ]
+  },
   "dataSources": {
     "iacadEnabled": true,
     "weatherEnabled": true

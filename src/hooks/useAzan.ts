@@ -19,6 +19,7 @@ export function useAzan(
   audioUnlocked: boolean,
   defaultAzan: string,
   fajrAzan: string,
+  iqamaSound: string,
   volume: number
 ) {
   const [state, setState] = useState<AzanState>({
@@ -29,7 +30,7 @@ export function useAzan(
   });
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const triggeredRef = useRef<Set<PrayerName>>(new Set());
+  const triggeredRef = useRef<Set<string>>(new Set()); // "fajr-azan", "fajr-iqama"
   const lastDateRef = useRef<string>("");
 
   // Reset triggered prayers at midnight
@@ -58,26 +59,58 @@ export function useAzan(
     };
   }, []);
 
-  // Check for azan trigger
+  // Check for azan and iqama triggers
   useEffect(() => {
     if (!prayers || !audioEnabled || !audioUnlocked) return;
+    if (state.isPlaying) return; // Don't interrupt current playback
 
     const now = currentTime.getTime();
 
     for (const prayer of prayers) {
       if (!AZAN_PRAYERS.includes(prayer.name)) continue;
-      if (triggeredRef.current.has(prayer.name)) continue;
+
+      const azanKey = `${prayer.name}-azan`;
+      const iqamaKey = `${prayer.name}-iqama`;
+
+      // Check iqama trigger first (if iqama sound is configured)
+      if (
+        iqamaSound &&
+        prayer.iqamaDate &&
+        !triggeredRef.current.has(iqamaKey)
+      ) {
+        const iqamaDiff = now - prayer.iqamaDate.getTime();
+        if (iqamaDiff >= 0 && iqamaDiff < 60000) {
+          triggeredRef.current.add(iqamaKey);
+          const audio = audioRef.current;
+          if (audio) {
+            audio.src = iqamaSound;
+            audio.volume = volume;
+            audio.play().catch((err) => {
+              console.error("[Iqama] Playback failed:", err);
+            });
+          }
+          setState({
+            isPlaying: true,
+            currentPrayer: prayer.name,
+            showOverlay: false, // No overlay for iqama, just sound
+            iqamaCountdownEnd: null,
+          });
+          return;
+        }
+      }
+
+      // Check azan trigger
+      if (triggeredRef.current.has(azanKey)) continue;
 
       const azanTime = prayer.azanDate.getTime();
       const diff = now - azanTime;
 
-      // Trigger if within 60-second window after azan time
       if (diff >= 0 && diff < 60000) {
-        triggeredRef.current.add(prayer.name);
+        triggeredRef.current.add(azanKey);
 
         const src = prayer.name === "fajr" ? fajrAzan : defaultAzan;
         const audio = audioRef.current;
-        if (audio) {
+        if (audio && src) {
           audio.src = src;
           audio.volume = volume;
           audio.play().catch((err) => {
@@ -92,10 +125,10 @@ export function useAzan(
           iqamaCountdownEnd: prayer.iqamaDate,
         });
 
-        break; // Only trigger one prayer at a time
+        break;
       }
     }
-  }, [prayers, currentTime, audioEnabled, audioUnlocked, defaultAzan, fajrAzan, volume]);
+  }, [prayers, currentTime, audioEnabled, audioUnlocked, defaultAzan, fajrAzan, iqamaSound, volume, state.isPlaying]);
 
   const dismissOverlay = useCallback(() => {
     setState((prev) => ({ ...prev, showOverlay: false }));

@@ -20,7 +20,7 @@ const DEFAULT_CONFIG: AppConfig = {
   calculationMethod: "Dubai",
   madhab: "Shafi",
   iqamaOffsets: { fajr: 20, dhuhr: 25, asr: 15, maghrib: 5, isha: 15 },
-  audio: { enabled: true, defaultAzan: "/audio/azan-makkah.mp3", fajrAzan: "/audio/azan-fajr.mp3", volume: 0.8 },
+  audio: { enabled: true, defaultAzan: "/audio/azan-makkah.mp3", fajrAzan: "/audio/azan-fajr.mp3", iqamaSound: "", volume: 0.8 },
   display: { timeFormat: "12h", showSeconds: true },
   dataSources: { iacadEnabled: true, weatherEnabled: true },
 };
@@ -46,6 +46,7 @@ export default function Home() {
     audioUnlocked,
     config.audio.defaultAzan,
     config.audio.fajrAzan,
+    config.audio.iqamaSound,
     config.audio.volume
   );
 

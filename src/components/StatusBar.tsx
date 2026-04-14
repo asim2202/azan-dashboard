@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 interface StatusBarProps {
   source: "iacad" | "calculated" | null;
   lastUpdated: string | null;
@@ -29,7 +31,7 @@ export default function StatusBar({
         <span>Source: {sourceLabel}</span>
         <span>Updated: {updatedStr}</span>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {audioEnabled ? (
           audioReady ? (
             <span className="text-green-400/60" title="Audio ready">&#x1F50A; Ready</span>
@@ -39,6 +41,13 @@ export default function StatusBar({
         ) : (
           <span title="Audio disabled">&#x1F507; Off</span>
         )}
+        <Link
+          href="/settings"
+          className="text-white/30 hover:text-white/60 transition-colors"
+          title="Settings"
+        >
+          &#x2699;&#xFE0F;
+        </Link>
       </div>
     </div>
   );

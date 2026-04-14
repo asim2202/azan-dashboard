@@ -17,6 +17,7 @@ export interface AudioConfig {
   enabled: boolean;
   defaultAzan: string;
   fajrAzan: string;
+  iqamaSound: string;
   volume: number;
 }
 

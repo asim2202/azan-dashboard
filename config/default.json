@@ -18,6 +18,7 @@
     "enabled": true,
     "defaultAzan": "/audio/azan-makkah.mp3",
     "fajrAzan": "/audio/azan-fajr.mp3",
+    "iqamaSound": "",
     "volume": 0.8
   },
   "display": {

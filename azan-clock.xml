@@ -9,7 +9,7 @@
   <Privileged>false</Privileged>
   <Support>https://github.com/asim2202/azan-dashboard</Support>
   <Project>https://github.com/asim2202/azan-dashboard</Project>
-  <Overview>Full-screen Azan Clock dashboard showing Dubai prayer times (IACAD method), iqama times, weather, Hijri date, and Azan audio playback. Access via browser at http://[IP]:[PORT:3000]</Overview>
+  <Overview>Full-screen Azan Clock dashboard showing Dubai prayer times (IACAD method), iqama times, weather, Hijri date, and Azan audio playback. Configure via built-in settings page at http://[IP]:[PORT:3000]/settings - upload audio files, set location, iqama offsets, and more.</Overview>
   <Category>Tools: Productivity:</Category>
   <WebUI>http://[IP]:[PORT:3000]</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/asim2202/azan-dashboard/main/azan-clock.xml</TemplateURL>
@@ -21,11 +21,13 @@
   <DonateText/>
   <DonateLink/>
   <Requires/>
-  <Config Name="Web UI Port" Target="3000" Default="3000" Mode="tcp" Description="Port for the web dashboard" Type="Port" Display="always" Required="true" Mask="false">3000</Config>
-  <Config Name="Timezone" Target="TZ" Default="Asia/Dubai" Mode="" Description="Timezone (IANA format)" Type="Variable" Display="always" Required="true" Mask="false">Asia/Dubai</Config>
-  <Config Name="Config" Target="/app/config" Default="/mnt/user/appdata/azan-clock/config" Mode="rw" Description="Configuration directory" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/azan-clock/config</Config>
-  <Config Name="Audio Files" Target="/app/public/audio" Default="/mnt/user/appdata/azan-clock/audio" Mode="rw" Description="Azan MP3 audio files directory. Place azan-makkah.mp3 and azan-fajr.mp3 here." Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/azan-clock/audio</Config>
-  <Config Name="Latitude" Target="LATITUDE" Default="25.2048" Mode="" Description="Location latitude" Type="Variable" Display="advanced" Required="false" Mask="false">25.2048</Config>
-  <Config Name="Longitude" Target="LONGITUDE" Default="55.2708" Mode="" Description="Location longitude" Type="Variable" Display="advanced" Required="false" Mask="false">55.2708</Config>
-  <Config Name="City" Target="CITY" Default="Dubai" Mode="" Description="City name for display and weather" Type="Variable" Display="advanced" Required="false" Mask="false">Dubai</Config>
+  <Config Name="Web UI Port" Target="3000" Default="3000" Mode="tcp" Description="Port for the web dashboard. Settings page at /settings" Type="Port" Display="always" Required="true" Mask="false">3000</Config>
+  <Config Name="Timezone" Target="TZ" Default="Asia/Dubai" Mode="" Description="System timezone (IANA format). Can also be set via Settings page." Type="Variable" Display="always" Required="true" Mask="false">Asia/Dubai</Config>
+  <Config Name="Config" Target="/app/config" Default="/mnt/user/appdata/azan-clock/config" Mode="rw" Description="Configuration directory. Settings page saves config here." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/azan-clock/config</Config>
+  <Config Name="Audio Files" Target="/app/public/audio" Default="/mnt/user/appdata/azan-clock/audio" Mode="rw" Description="Azan audio files directory. Upload via Settings page or place MP3 files here manually." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/azan-clock/audio</Config>
+  <Config Name="Latitude" Target="LATITUDE" Default="" Mode="" Description="Override location latitude (leave empty to use Settings page value)" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="Longitude" Target="LONGITUDE" Default="" Mode="" Description="Override location longitude (leave empty to use Settings page value)" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="City" Target="CITY" Default="" Mode="" Description="Override city name (leave empty to use Settings page value)" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="Calculation Method" Target="CALCULATION_METHOD" Default="" Mode="" Description="Override calculation method (leave empty to use Settings page value)" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="Madhab" Target="MADHAB" Default="" Mode="" Description="Override madhab - Shafi or Hanafi (leave empty to use Settings page value)" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
 </Container>

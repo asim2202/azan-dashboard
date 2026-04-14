@@ -1,4 +1,8 @@
+import fs from "fs";
+import path from "path";
 import type { AppConfig } from "@/types/config";
+
+const CONFIG_PATH = path.join(process.cwd(), "config", "default.json");
 
 const DEFAULT_CONFIG: AppConfig = {
   location: {
@@ -20,6 +24,7 @@ const DEFAULT_CONFIG: AppConfig = {
     enabled: true,
     defaultAzan: "/audio/azan-makkah.mp3",
     fajrAzan: "/audio/azan-fajr.mp3",
+    iqamaSound: "",
     volume: 0.8,
   },
   display: {
@@ -32,10 +37,52 @@ const DEFAULT_CONFIG: AppConfig = {
   },
 };
 
-export function getConfig(): AppConfig {
-  const config = { ...DEFAULT_CONFIG };
+// Server-side cache
+let serverCache: AppConfig | null = null;
 
-  // Override from environment variables
+function readConfigFromDisk(): AppConfig {
+  try {
+    if (fs.existsSync(CONFIG_PATH)) {
+      const raw = fs.readFileSync(CONFIG_PATH, "utf-8");
+      const parsed = JSON.parse(raw);
+      // Deep merge with defaults to fill any missing fields
+      return deepMerge(DEFAULT_CONFIG, parsed) as AppConfig;
+    }
+  } catch (err) {
+    console.error("[Config] Failed to read config file:", err);
+  }
+  return { ...DEFAULT_CONFIG };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function deepMerge(defaults: any, overrides: any): any {
+  if (
+    typeof defaults !== "object" || defaults === null ||
+    typeof overrides !== "object" || overrides === null ||
+    Array.isArray(defaults) || Array.isArray(overrides)
+  ) {
+    return overrides;
+  }
+  const result = { ...defaults };
+  for (const key of Object.keys(overrides)) {
+    if (
+      overrides[key] && typeof overrides[key] === "object" && !Array.isArray(overrides[key]) &&
+      defaults[key] && typeof defaults[key] === "object"
+    ) {
+      result[key] = deepMerge(defaults[key], overrides[key]);
+    } else {
+      result[key] = overrides[key];
+    }
+  }
+  return result;
+}
+
+export function getConfig(): AppConfig {
+  if (serverCache) return serverCache;
+
+  const config = readConfigFromDisk();
+
+  // Override from environment variables (highest priority)
   if (process.env.LATITUDE) config.location.latitude = parseFloat(process.env.LATITUDE);
   if (process.env.LONGITUDE) config.location.longitude = parseFloat(process.env.LONGITUDE);
   if (process.env.TIMEZONE) config.location.timezone = process.env.TIMEZONE;
@@ -43,26 +90,26 @@ export function getConfig(): AppConfig {
   if (process.env.CALCULATION_METHOD) config.calculationMethod = process.env.CALCULATION_METHOD;
   if (process.env.MADHAB) config.madhab = process.env.MADHAB;
 
+  serverCache = config;
   return config;
 }
 
-// Client-side config (no env vars, fetched from API)
-let cachedConfig: AppConfig | null = null;
-
-export async function getClientConfig(): Promise<AppConfig> {
-  if (cachedConfig) return cachedConfig;
-  try {
-    const res = await fetch("/api/config");
-    if (res.ok) {
-      cachedConfig = await res.json();
-      return cachedConfig!;
-    }
-  } catch {
-    // fall through to default
+export function saveConfig(config: AppConfig): void {
+  // Write to disk
+  const dir = path.dirname(CONFIG_PATH);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
-  return DEFAULT_CONFIG;
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), "utf-8");
+
+  // Clear cache so next getConfig() reads fresh
+  serverCache = null;
+}
+
+export function clearConfigCache(): void {
+  serverCache = null;
 }
 
 export function getDefaultConfig(): AppConfig {
-  return DEFAULT_CONFIG;
+  return { ...DEFAULT_CONFIG };
 }

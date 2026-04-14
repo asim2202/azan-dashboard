@@ -22,6 +22,9 @@
   <DonateLink/>
   <Requires/>
   <Config Name="Web UI Port" Target="3000" Default="3000" Mode="tcp" Description="Web dashboard port. Settings at /settings" Type="Port" Display="always" Required="true" Mask="false">3000</Config>
+  <Config Name="go2rtc Web UI" Target="1984" Default="1984" Mode="tcp" Description="go2rtc RTSP proxy web UI and MJPEG stream output" Type="Port" Display="always" Required="true" Mask="false">1984</Config>
+  <Config Name="RTSP Port" Target="8554" Default="8554" Mode="tcp" Description="go2rtc RTSP relay port" Type="Port" Display="advanced" Required="false" Mask="false">8554</Config>
+  <Config Name="WebRTC Port" Target="8555" Default="8555" Mode="tcp" Description="go2rtc WebRTC port" Type="Port" Display="advanced" Required="false" Mask="false">8555</Config>
   <Config Name="Config" Target="/app/config" Default="/mnt/user/appdata/azan-clock/config" Mode="rw" Description="Persists settings across updates" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/azan-clock/config</Config>
   <Config Name="Audio Files" Target="/app/public/audio" Default="/mnt/user/appdata/azan-clock/audio" Mode="rw" Description="Persists uploaded azan audio files" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/azan-clock/audio</Config>
 </Container>

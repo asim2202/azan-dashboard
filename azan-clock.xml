@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>azan-clock</Name>
+  <Repository>ghcr.io/asim2202/azan-dashboard:latest</Repository>
+  <Registry>https://ghcr.io/asim2202/azan-dashboard</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/asim2202/azan-dashboard</Support>
+  <Project>https://github.com/asim2202/azan-dashboard</Project>
+  <Overview>Full-screen Azan Clock dashboard showing Dubai prayer times (IACAD method), iqama times, weather, Hijri date, and Azan audio playback. Access via browser at http://[IP]:[PORT:3000]</Overview>
+  <Category>Tools: Productivity:</Category>
+  <WebUI>http://[IP]:[PORT:3000]</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/asim2202/azan-dashboard/main/azan-clock.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/asim2202/azan-dashboard/main/public/favicon.ico</Icon>
+  <ExtraParams>--restart unless-stopped</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="Web UI Port" Target="3000" Default="3000" Mode="tcp" Description="Port for the web dashboard" Type="Port" Display="always" Required="true" Mask="false">3000</Config>
+  <Config Name="Timezone" Target="TZ" Default="Asia/Dubai" Mode="" Description="Timezone (IANA format)" Type="Variable" Display="always" Required="true" Mask="false">Asia/Dubai</Config>
+  <Config Name="Config" Target="/app/config" Default="/mnt/user/appdata/azan-clock/config" Mode="rw" Description="Configuration directory" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/azan-clock/config</Config>
+  <Config Name="Audio Files" Target="/app/public/audio" Default="/mnt/user/appdata/azan-clock/audio" Mode="rw" Description="Azan MP3 audio files directory. Place azan-makkah.mp3 and azan-fajr.mp3 here." Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/azan-clock/audio</Config>
+  <Config Name="Latitude" Target="LATITUDE" Default="25.2048" Mode="" Description="Location latitude" Type="Variable" Display="advanced" Required="false" Mask="false">25.2048</Config>
+  <Config Name="Longitude" Target="LONGITUDE" Default="55.2708" Mode="" Description="Location longitude" Type="Variable" Display="advanced" Required="false" Mask="false">55.2708</Config>
+  <Config Name="City" Target="CITY" Default="Dubai" Mode="" Description="City name for display and weather" Type="Variable" Display="advanced" Required="false" Mask="false">Dubai</Config>
+</Container>

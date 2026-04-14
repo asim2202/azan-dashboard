@@ -396,7 +396,7 @@ export default function SettingsPage() {
               type="text"
               value={config.camera?.url || ""}
               onChange={(e) => updateConfig("camera.url", e.target.value)}
-              placeholder="http://192.168.1.x:8080/stream or snapshot URL"
+              placeholder="rtsp://user:pass@192.168.1.x:554/stream"
               className="input-field"
             />
           </Field>
@@ -407,7 +407,7 @@ export default function SettingsPage() {
               className="input-field"
             >
               <option value="image">Image / MJPEG Stream</option>
-              <option value="iframe">Iframe (go2rtc, web UI)</option>
+              <option value="iframe">Iframe (web player)</option>
             </select>
           </Field>
           <Field label="Refresh Interval (seconds, 0 = live stream)">
@@ -421,10 +421,10 @@ export default function SettingsPage() {
             />
           </Field>
           <div className="mt-3 p-3 rounded-lg bg-white/5 text-xs text-white/40">
-            <p className="font-medium text-white/60 mb-1">Common URL formats:</p>
+            <p className="font-medium text-white/60 mb-1">Supported URL formats:</p>
             <ul className="space-y-1">
-              <li>MJPEG proxy: http://server:8090/stream</li>
-              <li>go2rtc: http://server:1984/api/stream.mjpeg?src=camera</li>
+              <li>RTSP: rtsp://user:pass@camera-ip:554/stream (converted automatically via built-in go2rtc)</li>
+              <li>MJPEG: http://server:8090/stream</li>
               <li>Frigate: http://server:5000/api/camera/latest.jpg</li>
               <li>Snapshot: http://camera-ip/snap.jpg (set refresh to 2-5s)</li>
             </ul>

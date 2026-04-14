@@ -22,6 +22,17 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
+# Install go2rtc for RTSP to MJPEG conversion
+RUN apk add --no-cache curl && \
+    ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then GO2RTC_ARCH="amd64"; \
+    elif [ "$ARCH" = "aarch64" ]; then GO2RTC_ARCH="arm64"; \
+    else GO2RTC_ARCH="arm"; fi && \
+    curl -L -o /usr/local/bin/go2rtc \
+    "https://github.com/AlexxIT/go2rtc/releases/latest/download/go2rtc_linux_${GO2RTC_ARCH}" && \
+    chmod +x /usr/local/bin/go2rtc && \
+    apk del curl
+
 # Copy standalone output
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
@@ -31,8 +42,10 @@ COPY --from=builder /app/public ./public
 RUN mkdir -p /app/config /app/data /app/public/audio
 COPY --from=builder /app/config ./config
 
-EXPOSE 3000
+# Entrypoint script to start go2rtc + node
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
-# Run as root so volume-mounted directories are writable
-# (Docker volume mounts inherit host permissions which may not match a non-root user)
-CMD ["node", "server.js"]
+EXPOSE 3000 1984
+
+CMD ["/app/entrypoint.sh"]

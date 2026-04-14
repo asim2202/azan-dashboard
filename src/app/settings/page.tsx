@@ -355,6 +355,17 @@ export default function SettingsPage() {
 
         {/* Display */}
         <Section title="Display">
+          <Field label="Theme">
+            <select
+              value={config.display.theme || "auto"}
+              onChange={(e) => updateConfig("display.theme", e.target.value)}
+              className="input-field"
+            >
+              <option value="auto">Auto (light by day, dark by night)</option>
+              <option value="dark">Always Dark</option>
+              <option value="light">Always Light</option>
+            </select>
+          </Field>
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-white/70">24-Hour Format</span>
             <Toggle
@@ -368,6 +379,55 @@ export default function SettingsPage() {
               checked={config.display.showSeconds}
               onChange={(v) => updateConfig("display.showSeconds", v)}
             />
+          </div>
+        </Section>
+
+        {/* Camera */}
+        <Section title="Camera Feed">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm text-white/70">Enable Camera</span>
+            <Toggle
+              checked={config.camera?.enabled || false}
+              onChange={(v) => updateConfig("camera.enabled", v)}
+            />
+          </div>
+          <Field label="Stream URL">
+            <input
+              type="text"
+              value={config.camera?.url || ""}
+              onChange={(e) => updateConfig("camera.url", e.target.value)}
+              placeholder="http://192.168.1.x:8080/stream or snapshot URL"
+              className="input-field"
+            />
+          </Field>
+          <Field label="Feed Type">
+            <select
+              value={config.camera?.type || "image"}
+              onChange={(e) => updateConfig("camera.type", e.target.value)}
+              className="input-field"
+            >
+              <option value="image">Image / MJPEG Stream</option>
+              <option value="iframe">Iframe (go2rtc, web UI)</option>
+            </select>
+          </Field>
+          <Field label="Refresh Interval (seconds, 0 = live stream)">
+            <input
+              type="number"
+              min="0"
+              max="60"
+              value={config.camera?.refreshInterval || 0}
+              onChange={(e) => updateConfig("camera.refreshInterval", parseInt(e.target.value) || 0)}
+              className="input-field"
+            />
+          </Field>
+          <div className="mt-3 p-3 rounded-lg bg-white/5 text-xs text-white/40">
+            <p className="font-medium text-white/60 mb-1">Common URL formats:</p>
+            <ul className="space-y-1">
+              <li>MJPEG proxy: http://server:8090/stream</li>
+              <li>go2rtc: http://server:1984/api/stream.mjpeg?src=camera</li>
+              <li>Frigate: http://server:5000/api/camera/latest.jpg</li>
+              <li>Snapshot: http://camera-ip/snap.jpg (set refresh to 2-5s)</li>
+            </ul>
           </div>
         </Section>
 

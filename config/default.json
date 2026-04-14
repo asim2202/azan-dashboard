@@ -23,7 +23,14 @@
   },
   "display": {
     "timeFormat": "12h",
-    "showSeconds": true
+    "showSeconds": true,
+    "theme": "auto"
+  },
+  "camera": {
+    "enabled": false,
+    "url": "",
+    "type": "image",
+    "refreshInterval": 0
   },
   "dataSources": {
     "iacadEnabled": true,

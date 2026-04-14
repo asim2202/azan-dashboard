@@ -31,13 +31,13 @@ export default function NextPrayerBanner({
   if (!prayer) {
     return (
       <div className="text-center py-6">
-        <p className="text-white/40 text-lg">Loading prayer times...</p>
+        <p className="text-lg" style={{ color: "var(--text-muted)" }}>Loading prayer times...</p>
       </div>
     );
   }
 
   const msUntil = prayer.azanDate.getTime() - currentTime.getTime();
-  const isUrgent = msUntil > 0 && msUntil < 15 * 60 * 1000; // < 15 min
+  const isUrgent = msUntil > 0 && msUntil < 15 * 60 * 1000;
   const isPassed = msUntil <= 0;
 
   const timeStr = prayer.azanDate.toLocaleTimeString("en-US", {
@@ -50,11 +50,10 @@ export default function NextPrayerBanner({
   return (
     <div className="text-center py-2 portrait:py-2 landscape:py-4 sm:landscape:py-6">
       <div className="flex items-center justify-center gap-2 mb-1 landscape:mb-2">
-        <span className="text-amber-400 text-lg landscape:text-xl">&#9774;</span>
+        <span className="text-lg landscape:text-xl" style={{ color: "var(--accent)" }}>&#9774;</span>
         <h2
-          className={`text-xl portrait:text-2xl portrait:sm:text-3xl portrait:lg:text-4xl landscape:text-2xl sm:landscape:text-3xl md:landscape:text-4xl font-semibold tracking-wide ${
-            isUrgent ? "text-amber-400 animate-pulse" : "text-amber-300"
-          }`}
+          className={`text-xl portrait:text-2xl portrait:sm:text-3xl portrait:lg:text-4xl landscape:text-2xl sm:landscape:text-3xl md:landscape:text-4xl font-semibold tracking-wide ${isUrgent ? "animate-pulse" : ""}`}
+          style={{ color: isUrgent ? "var(--accent)" : "var(--accent-text)" }}
         >
           {prayer.label}
         </h2>
@@ -62,21 +61,19 @@ export default function NextPrayerBanner({
 
       {!isPassed ? (
         <p
-          className={`text-3xl portrait:text-4xl portrait:sm:text-5xl portrait:lg:text-6xl landscape:text-4xl sm:landscape:text-5xl md:landscape:text-6xl font-light ${
-            isUrgent ? "text-amber-400" : "text-white"
-          }`}
-          style={{ fontVariantNumeric: "tabular-nums" }}
+          className="text-3xl portrait:text-4xl portrait:sm:text-5xl portrait:lg:text-6xl landscape:text-4xl sm:landscape:text-5xl md:landscape:text-6xl font-light"
+          style={{ fontVariantNumeric: "tabular-nums", color: isUrgent ? "var(--accent)" : "var(--text-primary)" }}
         >
           {formatCountdown(msUntil)}
         </p>
       ) : (
-        <p className="text-xl text-amber-300/70">
+        <p className="text-xl" style={{ color: "var(--accent-muted)" }}>
           Azan at {timeStr}
         </p>
       )}
 
       {!isPassed && (
-        <p className="text-xs portrait:text-sm text-white/40 mt-1">Azan at {timeStr}</p>
+        <p className="text-xs portrait:text-sm mt-1" style={{ color: "var(--text-muted)" }}>Azan at {timeStr}</p>
       )}
     </div>
   );

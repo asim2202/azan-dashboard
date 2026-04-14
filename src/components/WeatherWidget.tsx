@@ -25,7 +25,7 @@ function WeatherIcon({ icon }: { icon: string }) {
 export default function WeatherWidget({ weather, error, city }: WeatherWidgetProps) {
   if (error || !weather) {
     return (
-      <div className="text-right text-white/30 text-sm">
+      <div className="text-right text-sm" style={{ color: "var(--text-faint)" }}>
         Weather unavailable
       </div>
     );
@@ -34,13 +34,13 @@ export default function WeatherWidget({ weather, error, city }: WeatherWidgetPro
   return (
     <div className="flex items-center gap-3 portrait:justify-center landscape:justify-end select-none">
       <div className="portrait:text-center landscape:text-right">
-        <p className="text-2xl portrait:text-2xl landscape:text-3xl sm:landscape:text-4xl font-light text-white">
+        <p className="text-2xl portrait:text-2xl landscape:text-3xl sm:landscape:text-4xl font-light" style={{ color: "var(--text-primary)" }}>
           {weather.temperature}&deg;C
         </p>
-        <p className="text-xs landscape:text-sm text-white/50">
+        <p className="text-xs landscape:text-sm" style={{ color: "var(--text-muted)" }}>
           Feels like {weather.apparentTemperature}&deg;C &middot; {weather.description}
         </p>
-        <p className="text-xs text-white/30">{city} &middot; {weather.humidity}% humidity</p>
+        <p className="text-xs" style={{ color: "var(--text-faint)" }}>{city} &middot; {weather.humidity}% humidity</p>
       </div>
       <WeatherIcon icon={weather.icon} />
     </div>

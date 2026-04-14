@@ -26,7 +26,7 @@ export default function StatusBar({
     : "--:--";
 
   return (
-    <div className="flex items-center justify-between px-4 py-2 text-xs text-white/30 select-none">
+    <div className="flex items-center justify-between px-4 py-2 text-xs select-none" style={{ color: "var(--text-faint)" }}>
       <div className="flex items-center gap-4">
         <span>Source: {sourceLabel}</span>
         <span>Updated: {updatedStr}</span>
@@ -34,16 +34,17 @@ export default function StatusBar({
       <div className="flex items-center gap-3">
         {audioEnabled ? (
           audioReady ? (
-            <span className="text-green-400/60" title="Audio ready">&#x1F50A; Ready</span>
+            <span style={{ color: "var(--status-green)" }} title="Audio ready">&#x1F50A; Ready</span>
           ) : (
-            <span className="text-amber-400/60" title="Tap to enable audio">&#x1F507; Tap to enable</span>
+            <span style={{ color: "var(--status-amber)" }} title="Tap to enable audio">&#x1F507; Tap to enable</span>
           )
         ) : (
           <span title="Audio disabled">&#x1F507; Off</span>
         )}
         <Link
           href="/settings"
-          className="text-white/30 hover:text-white/60 transition-colors"
+          className="hover:opacity-80 transition-opacity"
+          style={{ color: "var(--text-faint)" }}
           title="Settings"
         >
           &#x2699;&#xFE0F;

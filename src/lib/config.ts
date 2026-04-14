@@ -30,6 +30,13 @@ const DEFAULT_CONFIG: AppConfig = {
   display: {
     timeFormat: "12h",
     showSeconds: true,
+    theme: "auto",
+  },
+  camera: {
+    enabled: false,
+    url: "",
+    type: "image",
+    refreshInterval: 0,
   },
   dataSources: {
     iacadEnabled: true,

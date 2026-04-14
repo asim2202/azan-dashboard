@@ -24,6 +24,14 @@ export interface AudioConfig {
 export interface DisplayConfig {
   timeFormat: "12h" | "24h";
   showSeconds: boolean;
+  theme: "auto" | "dark" | "light";
+}
+
+export interface CameraConfig {
+  enabled: boolean;
+  url: string;
+  type: "image" | "iframe";
+  refreshInterval: number; // 0 = live stream, >0 = refresh every N seconds
 }
 
 export interface AppConfig {
@@ -33,6 +41,7 @@ export interface AppConfig {
   iqamaOffsets: IqamaOffsets;
   audio: AudioConfig;
   display: DisplayConfig;
+  camera: CameraConfig;
   dataSources: {
     iacadEnabled: boolean;
     weatherEnabled: boolean;

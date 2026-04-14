@@ -20,10 +20,10 @@ export default function DateDisplay({ time, timezone }: DateDisplayProps) {
 
   return (
     <div className="text-center select-none">
-      <div className="flex items-center justify-center gap-3 text-base sm:text-lg text-white/70">
+      <div className="flex items-center justify-center gap-3 text-base sm:text-lg" style={{ color: "var(--text-secondary)" }}>
         <span>{gregorian}</span>
-        <span className="text-white/30">|</span>
-        <span className="font-arabic">{hijri.formatted}</span>
+        <span style={{ color: "var(--text-faint)" }}>|</span>
+        <span>{hijri.formatted}</span>
       </div>
     </div>
   );

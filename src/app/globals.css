@@ -13,14 +13,55 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
   font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
   overflow: hidden;
   user-select: none;
 }
 
-/* Animated pulse for urgent countdown */
+/* ===== Theme Variables ===== */
+
+.theme-dark {
+  --bg-main: #0a0e1a;
+  --bg-main-via: #0f1629;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.4);
+  --text-faint: rgba(255, 255, 255, 0.2);
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --card-bg-hover: rgba(255, 255, 255, 0.08);
+  --accent: #f59e0b;
+  --accent-light: rgba(245, 158, 11, 0.15);
+  --accent-text: #fbbf24;
+  --accent-muted: rgba(251, 191, 36, 0.8);
+  --border: rgba(255, 255, 255, 0.1);
+  --ring-accent: rgba(245, 158, 11, 0.3);
+  --status-green: rgba(74, 222, 128, 0.6);
+  --status-amber: rgba(251, 191, 36, 0.6);
+  --overlay-bg: rgba(0, 0, 0, 0.8);
+}
+
+.theme-light {
+  --bg-main: #eef1f6;
+  --bg-main-via: #e4e8f0;
+  --text-primary: #1a1a2e;
+  --text-secondary: rgba(26, 26, 46, 0.7);
+  --text-muted: rgba(26, 26, 46, 0.45);
+  --text-faint: rgba(26, 26, 46, 0.2);
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --card-bg-hover: rgba(255, 255, 255, 0.9);
+  --accent: #0d6e4f;
+  --accent-light: rgba(13, 110, 79, 0.1);
+  --accent-text: #0d6e4f;
+  --accent-muted: rgba(13, 110, 79, 0.7);
+  --border: rgba(0, 0, 0, 0.08);
+  --ring-accent: rgba(13, 110, 79, 0.3);
+  --status-green: rgba(22, 163, 74, 0.7);
+  --status-amber: rgba(217, 119, 6, 0.7);
+  --overlay-bg: rgba(255, 255, 255, 0.9);
+}
+
+/* ===== Animations ===== */
+
 @keyframes urgentPulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
@@ -30,7 +71,6 @@ body {
   animation: urgentPulse 1s ease-in-out infinite;
 }
 
-/* Audio visualizer bars */
 @keyframes audioBar {
   0%, 100% { transform: scaleY(0.3); }
   50% { transform: scaleY(1); }
@@ -40,7 +80,8 @@ body {
   animation: audioBar 0.8s ease-in-out infinite;
 }
 
-/* Form inputs for settings */
+/* ===== Form inputs for settings ===== */
+
 .input-field {
   width: 100%;
   padding: 0.5rem 0.75rem;

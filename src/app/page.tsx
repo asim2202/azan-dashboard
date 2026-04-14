@@ -9,6 +9,7 @@ import WeatherWidget from "@/components/WeatherWidget";
 import StatusBar from "@/components/StatusBar";
 import AudioUnlockButton from "@/components/AudioUnlockButton";
 import AzanOverlay from "@/components/AzanOverlay";
+import CameraFeed from "@/components/CameraFeed";
 import { useCurrentTime } from "@/hooks/useCurrentTime";
 import { usePrayerTimes } from "@/hooks/usePrayerTimes";
 import { useWeather } from "@/hooks/useWeather";
@@ -21,9 +22,31 @@ const DEFAULT_CONFIG: AppConfig = {
   madhab: "Shafi",
   iqamaOffsets: { fajr: 20, dhuhr: 25, asr: 15, maghrib: 5, isha: 15 },
   audio: { enabled: true, defaultAzan: "/audio/azan-makkah.mp3", fajrAzan: "/audio/azan-fajr.mp3", iqamaSound: "", volume: 0.8 },
-  display: { timeFormat: "12h", showSeconds: true },
+  display: { timeFormat: "12h", showSeconds: true, theme: "auto" },
+  camera: { enabled: false, url: "", type: "image", refreshInterval: 0 },
   dataSources: { iacadEnabled: true, weatherEnabled: true },
 };
+
+function computeTheme(
+  setting: "auto" | "dark" | "light",
+  prayers: { azanDate: Date; name: string }[] | undefined,
+  now: Date
+): "theme-dark" | "theme-light" {
+  if (setting === "dark") return "theme-dark";
+  if (setting === "light") return "theme-light";
+
+  // Auto: light between sunrise and maghrib
+  if (!prayers) return "theme-dark";
+  const sunrise = prayers.find((p) => p.name === "sunrise");
+  const maghrib = prayers.find((p) => p.name === "maghrib");
+  if (!sunrise || !maghrib) return "theme-dark";
+
+  const nowMs = now.getTime();
+  if (nowMs >= sunrise.azanDate.getTime() && nowMs < maghrib.azanDate.getTime()) {
+    return "theme-light";
+  }
+  return "theme-dark";
+}
 
 export default function Home() {
   const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG);
@@ -39,6 +62,11 @@ export default function Home() {
     [getNextPrayer, currentTime, mounted]
   );
 
+  const themeClass = useMemo(
+    () => computeTheme(config.display.theme, prayerData?.prayers, currentTime),
+    [config.display.theme, prayerData?.prayers, currentTime]
+  );
+
   const azan = useAzan(
     prayerData?.prayers,
     currentTime,
@@ -49,6 +77,8 @@ export default function Home() {
     config.audio.iqamaSound,
     config.audio.volume
   );
+
+  const cameraEnabled = config.camera?.enabled && config.camera?.url;
 
   // Fetch config from API
   useEffect(() => {
@@ -61,7 +91,6 @@ export default function Home() {
   // Screen wake lock
   useEffect(() => {
     let wakeLock: WakeLockSentinel | null = null;
-
     async function requestWakeLock() {
       try {
         if ("wakeLock" in navigator) {
@@ -69,16 +98,11 @@ export default function Home() {
         }
       } catch {}
     }
-
     requestWakeLock();
-
     const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        requestWakeLock();
-      }
+      if (document.visibilityState === "visible") requestWakeLock();
     };
     document.addEventListener("visibilitychange", handleVisibility);
-
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       wakeLock?.release().catch(() => {});
@@ -91,44 +115,23 @@ export default function Home() {
     const next1am = new Date(now);
     next1am.setHours(25, 0, 0, 0);
     const ms = next1am.getTime() - now.getTime();
-
-    const timer = setTimeout(() => {
-      window.location.reload();
-    }, ms);
-
+    const timer = setTimeout(() => window.location.reload(), ms);
     return () => clearTimeout(timer);
   }, []);
 
-  // Show loading skeleton until client-side hydration completes
   if (!mounted) {
     return (
-      <main className="h-screen flex items-center justify-center bg-gradient-to-b from-[#0a0e1a] via-[#0f1629] to-[#0a0e1a]">
+      <main className="theme-dark h-screen flex items-center justify-center" style={{ background: "var(--bg-main)" }}>
         <div className="text-center">
           <div className="text-6xl mb-4">&#x1F54C;</div>
-          <p className="text-white/40 text-lg">Loading Azan Clock...</p>
+          <p style={{ color: "var(--text-muted)" }} className="text-lg">Loading Azan Clock...</p>
         </div>
       </main>
     );
   }
 
-  return (
-    <main className="h-screen flex flex-col bg-gradient-to-b from-[#0a0e1a] via-[#0f1629] to-[#0a0e1a] overflow-hidden">
-      {/* Audio unlock overlay */}
-      {config.audio.enabled && !audioUnlocked && (
-        <AudioUnlockButton onUnlock={() => setAudioUnlocked(true)} />
-      )}
-
-      {/* Azan overlay */}
-      {azan.showOverlay && (
-        <AzanOverlay
-          isPlaying={azan.isPlaying}
-          prayerName={azan.currentPrayer}
-          iqamaCountdownEnd={azan.iqamaCountdownEnd}
-          currentTime={currentTime}
-          onDismiss={azan.dismissOverlay}
-        />
-      )}
-
+  const dashboard = (
+    <div className="flex-1 flex flex-col overflow-hidden min-w-0">
       {/* Top: Clock and Date */}
       <section className="flex-shrink-0 pt-3 portrait:pt-4 landscape:pt-6 sm:landscape:pt-10">
         <Clock
@@ -142,7 +145,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Next Prayer Countdown - grows on tall portrait screens */}
+      {/* Next Prayer Countdown */}
       <section className="flex-shrink-0 portrait:sm:flex-1 portrait:sm:flex portrait:sm:flex-col portrait:sm:justify-center portrait:py-3 landscape:py-0">
         <NextPrayerBanner
           prayer={nextPrayer}
@@ -152,7 +155,7 @@ export default function Home() {
         />
       </section>
 
-      {/* Prayer Times Grid/List */}
+      {/* Prayer Times */}
       <section className="flex-1 flex flex-col justify-center min-h-0">
         <div className="portrait:mt-1 landscape:mt-4 sm:landscape:mt-6">
           {prayerData ? (
@@ -163,12 +166,21 @@ export default function Home() {
               format={config.display.timeFormat}
             />
           ) : loading ? (
-            <div className="text-center text-white/30">Loading prayer times...</div>
+            <div className="text-center" style={{ color: "var(--text-faint)" }}>Loading prayer times...</div>
           ) : (
             <div className="text-center text-red-400/60">Failed to load prayer times</div>
           )}
         </div>
       </section>
+
+      {/* Portrait: Camera between prayers and weather */}
+      {cameraEnabled && (
+        <section className="landscape:hidden flex-shrink-0 px-4 py-2">
+          <div className="h-48 sm:h-64">
+            <CameraFeed config={config.camera} />
+          </div>
+        </section>
+      )}
 
       {/* Bottom: Weather + Status */}
       <section className="flex-shrink-0 pb-1 portrait:pb-2">
@@ -186,6 +198,39 @@ export default function Home() {
           audioEnabled={config.audio.enabled}
         />
       </section>
+    </div>
+  );
+
+  return (
+    <main
+      className={`${themeClass} h-screen flex overflow-hidden transition-colors duration-1000`}
+      style={{ background: `linear-gradient(to bottom, var(--bg-main), var(--bg-main-via), var(--bg-main))` }}
+    >
+      {/* Audio unlock overlay */}
+      {config.audio.enabled && !audioUnlocked && (
+        <AudioUnlockButton onUnlock={() => setAudioUnlocked(true)} />
+      )}
+
+      {/* Azan overlay */}
+      {azan.showOverlay && (
+        <AzanOverlay
+          isPlaying={azan.isPlaying}
+          prayerName={azan.currentPrayer}
+          iqamaCountdownEnd={azan.iqamaCountdownEnd}
+          currentTime={currentTime}
+          onDismiss={azan.dismissOverlay}
+        />
+      )}
+
+      {/* Main layout: landscape with camera = side panel */}
+      {dashboard}
+
+      {/* Landscape: Camera side panel */}
+      {cameraEnabled && (
+        <div className="hidden landscape:flex flex-shrink-0 w-[35%] p-3">
+          <CameraFeed config={config.camera} />
+        </div>
+      )}
     </main>
   );
 }

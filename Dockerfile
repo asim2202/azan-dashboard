@@ -22,8 +22,8 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# Install go2rtc for RTSP to MJPEG conversion
-RUN apk add --no-cache curl && \
+# Install go2rtc + ffmpeg (needed to transcode H264 to MJPEG)
+RUN apk add --no-cache curl ffmpeg && \
     ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then GO2RTC_ARCH="amd64"; \
     elif [ "$ARCH" = "aarch64" ]; then GO2RTC_ARCH="arm64"; \

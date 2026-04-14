@@ -5,16 +5,15 @@ import type { AppConfig } from "@/types/config";
 const GO2RTC_CONFIG = "/tmp/go2rtc.yaml";
 
 function updateGo2rtcConfig(cameraUrl: string) {
-  // Use ffmpeg as the source - go2rtc's native RTSP client fails on some RTSPS streams
-  // ffmpeg handles RTSPS/SRTP reliably, go2rtc just restreams it
-  const ffmpegSource = cameraUrl
-    ? `\n  frontdoor: "ffmpeg:${cameraUrl}#video=copy#audio=copy"`
+  // Use exec:ffmpeg to pull the RTSP stream - go2rtc's native client fails on some RTSPS
+  const streamSource = cameraUrl
+    ? `\n  frontdoor:\n    - "exec:ffmpeg -rtsp_transport tcp -i ${cameraUrl} -c:v copy -c:a copy -f rtsp rtsp://localhost:8554/frontdoor"`
     : "";
   const yaml = `api:
   listen: ":1984"
 rtsp:
   listen: ":8554"
-streams:${ffmpegSource || " {}"}
+streams:${streamSource || " {}"}
 `;
   try {
     fs.writeFileSync(GO2RTC_CONFIG, yaml, "utf-8");

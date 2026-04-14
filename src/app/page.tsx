@@ -129,27 +129,31 @@ export default function Home() {
       )}
 
       {/* Top: Clock and Date */}
-      <section className="flex-shrink-0 pt-6 sm:pt-10">
+      <section className="flex-shrink-0 pt-3 portrait:pt-4 landscape:pt-6 sm:landscape:pt-10">
         <Clock
           time={currentTime}
           timezone={timezone}
           format={config.display.timeFormat}
           showSeconds={config.display.showSeconds}
         />
-        <div className="mt-2">
+        <div className="mt-1 portrait:mt-1 landscape:mt-2">
           <DateDisplay time={currentTime} timezone={timezone} />
         </div>
       </section>
 
-      {/* Middle: Next Prayer + All Prayer Times */}
-      <section className="flex-1 flex flex-col justify-center min-h-0">
+      {/* Next Prayer Countdown - grows on tall portrait screens */}
+      <section className="flex-shrink-0 portrait:sm:flex-1 portrait:sm:flex portrait:sm:flex-col portrait:sm:justify-center portrait:py-3 landscape:py-0">
         <NextPrayerBanner
           prayer={nextPrayer}
           currentTime={currentTime}
           timezone={timezone}
           format={config.display.timeFormat}
         />
-        <div className="mt-4 sm:mt-6">
+      </section>
+
+      {/* Prayer Times Grid/List */}
+      <section className="flex-1 flex flex-col justify-center min-h-0">
+        <div className="portrait:mt-1 landscape:mt-4 sm:landscape:mt-6">
           {prayerData ? (
             <PrayerTimesCard
               prayers={prayerData.prayers}
@@ -166,8 +170,8 @@ export default function Home() {
       </section>
 
       {/* Bottom: Weather + Status */}
-      <section className="flex-shrink-0 pb-2">
-        <div className="px-4 sm:px-8 mb-2">
+      <section className="flex-shrink-0 pb-1 portrait:pb-2">
+        <div className="px-4 sm:px-8 mb-1 landscape:mb-2">
           <WeatherWidget
             weather={weather}
             error={weatherError}

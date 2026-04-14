@@ -48,11 +48,11 @@ export default function NextPrayerBanner({
   });
 
   return (
-    <div className="text-center py-4 sm:py-6">
-      <div className="flex items-center justify-center gap-2 mb-2">
-        <span className="text-amber-400 text-xl">&#9774;</span>
+    <div className="text-center py-2 portrait:py-2 landscape:py-4 sm:landscape:py-6">
+      <div className="flex items-center justify-center gap-2 mb-1 landscape:mb-2">
+        <span className="text-amber-400 text-lg landscape:text-xl">&#9774;</span>
         <h2
-          className={`text-2xl sm:text-3xl md:text-4xl font-semibold tracking-wide ${
+          className={`text-xl portrait:text-2xl portrait:sm:text-3xl portrait:lg:text-4xl landscape:text-2xl sm:landscape:text-3xl md:landscape:text-4xl font-semibold tracking-wide ${
             isUrgent ? "text-amber-400 animate-pulse" : "text-amber-300"
           }`}
         >
@@ -62,7 +62,7 @@ export default function NextPrayerBanner({
 
       {!isPassed ? (
         <p
-          className={`text-4xl sm:text-5xl md:text-6xl font-light ${
+          className={`text-3xl portrait:text-4xl portrait:sm:text-5xl portrait:lg:text-6xl landscape:text-4xl sm:landscape:text-5xl md:landscape:text-6xl font-light ${
             isUrgent ? "text-amber-400" : "text-white"
           }`}
           style={{ fontVariantNumeric: "tabular-nums" }}
@@ -76,7 +76,7 @@ export default function NextPrayerBanner({
       )}
 
       {!isPassed && (
-        <p className="text-sm text-white/40 mt-1">Azan at {timeStr}</p>
+        <p className="text-xs portrait:text-sm text-white/40 mt-1">Azan at {timeStr}</p>
       )}
     </div>
   );

@@ -32,18 +32,15 @@ export default function WeatherWidget({ weather, error, city }: WeatherWidgetPro
   }
 
   return (
-    <div className="flex items-center gap-4 justify-end select-none">
-      <div className="text-right">
-        <p className="text-3xl sm:text-4xl font-light text-white">
+    <div className="flex items-center gap-3 portrait:justify-center landscape:justify-end select-none">
+      <div className="portrait:text-center landscape:text-right">
+        <p className="text-2xl portrait:text-2xl landscape:text-3xl sm:landscape:text-4xl font-light text-white">
           {weather.temperature}&deg;C
         </p>
-        <p className="text-sm text-white/50">
-          Feels like {weather.apparentTemperature}&deg;C
+        <p className="text-xs landscape:text-sm text-white/50">
+          Feels like {weather.apparentTemperature}&deg;C &middot; {weather.description}
         </p>
-        <p className="text-xs text-white/40 mt-1">
-          {weather.description} &middot; {weather.humidity}% humidity
-        </p>
-        <p className="text-xs text-white/30">{city}</p>
+        <p className="text-xs text-white/30">{city} &middot; {weather.humidity}% humidity</p>
       </div>
       <WeatherIcon icon={weather.icon} />
     </div>

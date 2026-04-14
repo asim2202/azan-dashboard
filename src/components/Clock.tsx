@@ -29,7 +29,7 @@ export default function Clock({ time, timezone, format, showSeconds }: ClockProp
     <div className="text-center select-none">
       <div className="flex items-baseline justify-center gap-3">
         <span
-          className="text-7xl sm:text-8xl md:text-9xl font-light tracking-tight text-white"
+          className="text-6xl portrait:text-7xl portrait:sm:text-8xl portrait:lg:text-9xl landscape:text-7xl sm:landscape:text-8xl md:landscape:text-9xl font-light tracking-tight text-white"
           style={{ fontVariantNumeric: "tabular-nums" }}
         >
           {mainTime}

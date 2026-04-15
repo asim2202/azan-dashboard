@@ -48,25 +48,33 @@ RUN apk add --no-cache jq
 # Create entrypoint inline to avoid CRLF issues from Windows
 RUN printf '#!/bin/sh\n\
 \n\
-# Read camera URL from saved config if it exists\n\
+# Read camera URL from saved config\n\
 CAMERA_URL=""\n\
+CAMERA_ENABLED="false"\n\
 if [ -f /app/config/default.json ]; then\n\
   CAMERA_URL=$(jq -r ".camera.url // empty" /app/config/default.json 2>/dev/null)\n\
   CAMERA_ENABLED=$(jq -r ".camera.enabled // false" /app/config/default.json 2>/dev/null)\n\
 fi\n\
 \n\
-# Write go2rtc config\n\
-if [ -n "$CAMERA_URL" ] && [ "$CAMERA_ENABLED" = "true" ]; then\n\
-  printf "api:\\n  listen: \\":1984\\"\\nrtsp:\\n  listen: \\":8554\\"\\nstreams:\\n  frontdoor: \\"exec:ffmpeg -hide_banner -rtsp_transport tcp -i %s -vcodec copy -an -f mpegts pipe:\\"\\n" "$CAMERA_URL" > /tmp/go2rtc.yaml\n\
-  echo "[entrypoint] go2rtc configured with exec:ffmpeg stream: $CAMERA_URL"\n\
-else\n\
-  printf "api:\\n  listen: \\":1984\\"\\nrtsp:\\n  listen: \\":8554\\"\\nstreams: {}\\n" > /tmp/go2rtc.yaml\n\
-  echo "[entrypoint] go2rtc started with no streams"\n\
-fi\n\
+# Write go2rtc config (empty streams - ffmpeg pushes directly)\n\
+printf "api:\\n  listen: \\":1984\\"\\nrtsp:\\n  listen: \\":8554\\"\\nstreams: {}\\n" > /tmp/go2rtc.yaml\n\
 \n\
-# Start go2rtc in background\n\
+# Start go2rtc\n\
 go2rtc -config /tmp/go2rtc.yaml &\n\
-sleep 1\n\
+sleep 2\n\
+\n\
+# Start ffmpeg to push camera stream to go2rtc RTSP server\n\
+if [ -n "$CAMERA_URL" ] && [ "$CAMERA_ENABLED" = "true" ]; then\n\
+  echo "[entrypoint] Starting ffmpeg for camera: $CAMERA_URL"\n\
+  ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp \\\n\
+    -i "$CAMERA_URL" \\\n\
+    -c copy -f rtsp \\\n\
+    rtsp://127.0.0.1:8554/frontdoor &\n\
+  sleep 1\n\
+  echo "[entrypoint] ffmpeg started, stream at rtsp://localhost:8554/frontdoor"\n\
+else\n\
+  echo "[entrypoint] No camera configured"\n\
+fi\n\
 \n\
 # Start Next.js\n\
 exec node server.js\n' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh

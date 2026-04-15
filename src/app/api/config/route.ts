@@ -5,11 +5,9 @@ import type { AppConfig } from "@/types/config";
 const GO2RTC_CONFIG = "/tmp/go2rtc.yaml";
 
 function updateGo2rtcConfig(cameraUrl: string) {
-  // Use exec:ffmpeg to pull RTSPS and pipe to go2rtc via stdout
-  // -vcodec copy instead of -c:v copy (go2rtc splits on colons)
-  const streamSource = cameraUrl
-    ? `\n  frontdoor: "exec:ffmpeg -hide_banner -rtsp_transport tcp -i ${cameraUrl} -vcodec copy -an -f mpegts pipe:"`
-    : "";
+  // go2rtc config - streams are empty because ffmpeg pushes directly
+  // to go2rtc's RTSP server as a separate process
+  const streamSource = "";
   const yaml = `api:
   listen: ":1984"
 rtsp:

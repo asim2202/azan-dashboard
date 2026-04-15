@@ -13,8 +13,10 @@ export default function CameraWidget({ config }: WidgetProps) {
   }
 
   return (
-    <div className="h-full min-h-[150px]">
-      <CameraFeed config={config.camera} />
+    <div className="h-full flex items-center justify-center overflow-hidden">
+      <div className="w-full" style={{ aspectRatio: "4 / 3" }}>
+        <CameraFeed config={config.camera} />
+      </div>
     </div>
   );
 }

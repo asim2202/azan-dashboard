@@ -1,18 +1,29 @@
+export interface AirQuality {
+  aqi: number;          // US AQI (0–500)
+  pm25: number;         // PM2.5 µg/m³
+  pm10: number;         // PM10 µg/m³
+  label: string;        // "Good", "Moderate", etc.
+  color: string;        // CSS color for the label
+}
+
 export interface WeatherData {
   temperature: number;
   apparentTemperature: number;
   humidity: number;
   weatherCode: number;
   windSpeed: number;
+  precipitationChance: number;
   description: string;
   icon: string;
   hourly: HourlyForecast[];
   daily: DailyForecast[];
+  airQuality?: AirQuality;
 }
 
 export interface HourlyForecast {
   time: string; // HH:mm
   temperature: number;
+  precipitationChance: number;
   weatherCode: number;
   icon: string;
 }
@@ -22,6 +33,7 @@ export interface DailyForecast {
   date: string; // Apr 14
   high: number;
   low: number;
+  precipitationChance: number;
   weatherCode: number;
   icon: string;
   description: string;

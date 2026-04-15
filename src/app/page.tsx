@@ -10,6 +10,7 @@ import { usePrayerTimes } from "@/hooks/usePrayerTimes";
 import { useWeather } from "@/hooks/useWeather";
 import { useAzan } from "@/hooks/useAzan";
 import { DEFAULT_GRID_WIDGETS } from "@/lib/widget-registry";
+import { getWeatherGradient } from "@/lib/weather-theme";
 import type { AppConfig } from "@/types/config";
 import type { WidgetProps } from "@/types/widget";
 
@@ -19,8 +20,11 @@ import PrayerTimesWidget from "@/components/widgets/PrayerTimesWidget";
 import WeatherWidgetComponent from "@/components/widgets/WeatherWidget";
 import CameraWidget from "@/components/widgets/CameraWidget";
 import WorldClockWidget from "@/components/widgets/WorldClockWidget";
-import HadithWidget from "@/components/widgets/HadithWidget";
-import QuranVerseWidget from "@/components/widgets/QuranVerseWidget";
+import IslamicContentWidget from "@/components/widgets/IslamicContentWidget";
+import AqiWidget from "@/components/widgets/AqiWidget";
+import NewsTicker from "@/components/NewsTicker";
+import StarsOverlay from "@/components/StarsOverlay";
+import WeatherEffectsOverlay from "@/components/WeatherEffectsOverlay";
 
 const DEFAULT_CONFIG: AppConfig = {
   location: { latitude: 25.2048, longitude: 55.2708, city: "Dubai", timezone: "Asia/Dubai" },
@@ -49,9 +53,12 @@ function computeTheme(
   return "theme-dark";
 }
 
-function Card({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+function Card({ children, className = "", style, index = 0 }: { children: React.ReactNode; className?: string; style?: React.CSSProperties; index?: number }) {
   return (
-    <div className={`rounded-xl overflow-hidden ${className}`} style={{ background: "var(--card-bg)", ...style }}>
+    <div
+      className={`rounded-xl overflow-hidden backdrop-blur-sm card-shimmer card-animate ${className}`}
+      style={{ background: "var(--card-bg)", "--card-i": index, ...style } as React.CSSProperties}
+    >
       <WidgetWrapper>{children}</WidgetWrapper>
     </div>
   );
@@ -60,6 +67,8 @@ function Card({ children, className = "", style }: { children: React.ReactNode; 
 export default function Home() {
   const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [viewport, setViewport] = useState<{ w: number; h: number } | null>(null);
+  const [orientationOverride, setOrientationOverride] = useState<"auto" | "landscape" | "portrait">("auto");
 
   const timezone = config.location.timezone;
   const { time: currentTime, mounted } = useCurrentTime();
@@ -67,7 +76,16 @@ export default function Home() {
   const { weather } = useWeather();
 
   const nextPrayer = useMemo(() => mounted ? getNextPrayer(currentTime) : null, [getNextPrayer, currentTime, mounted]);
-  const themeClass = useMemo(() => computeTheme(config.display.theme, prayerData?.prayers, currentTime), [config.display.theme, prayerData?.prayers, currentTime]);
+  const themeClass = "theme-dark"; // Always dark text for weather gradient backgrounds
+  const currentHour = useMemo(() =>
+    parseInt(currentTime.toLocaleTimeString("en-GB", { hour: "numeric", hour12: false, timeZone: config.location.timezone })),
+    [currentTime, config.location.timezone]
+  );
+  const weatherGradient = useMemo(() =>
+    getWeatherGradient(weather?.weatherCode, currentHour),
+    [weather?.weatherCode, currentHour]
+  );
+  const isNight = currentHour < 5 || currentHour >= 20;
 
   const azan = useAzan(
     prayerData?.prayers, currentTime, config.audio.enabled, audioUnlocked,
@@ -75,6 +93,15 @@ export default function Home() {
   );
 
   useEffect(() => { fetch("/api/config").then((r) => r.json()).then(setConfig).catch(() => {}); }, []);
+
+  // Track viewport for scale calculation
+  useEffect(() => {
+    const update = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
   useEffect(() => {
     let wl: WakeLockSentinel | null = null;
     async function req() { try { if ("wakeLock" in navigator) wl = await navigator.wakeLock.request("screen"); } catch {} }
@@ -89,7 +116,7 @@ export default function Home() {
     return () => clearTimeout(t);
   }, []);
 
-  if (!mounted) {
+  if (!mounted || !viewport) {
     return (
       <main className="theme-dark h-screen flex items-center justify-center" style={{ background: "var(--bg-main)" }}>
         <div className="text-center">
@@ -100,113 +127,173 @@ export default function Home() {
     );
   }
 
-  const wp: WidgetProps = { size: "M", currentTime, timezone, config, prayerData, nextPrayer, weather };
+  // Fixed 16:9 render — detect orientation, scale to fit any screen
+  const isLandscape = orientationOverride === "auto"
+    ? viewport.w >= viewport.h
+    : orientationOverride === "landscape";
+  const DESIGN_W = isLandscape ? 1920 : 1080;
+  const DESIGN_H = isLandscape ? 1080 : 1920;
+  const scale = Math.min(viewport.w / DESIGN_W, viewport.h / DESIGN_H);
+
+  const orientation = isLandscape ? "H" as const : "V" as const;
+  const wp: WidgetProps = { size: orientation, currentTime, timezone, config, prayerData, nextPrayer, weather };
   const cameraOn = config.camera?.enabled && config.camera?.url;
 
   return (
-    <main
-      className={`${themeClass} h-screen flex flex-col overflow-hidden select-none transition-colors duration-1000`}
-      style={{ background: `linear-gradient(to bottom, var(--bg-main), var(--bg-main-via), var(--bg-main))` }}
+    <div
+      className={`${themeClass} transition-all duration-[3000ms] relative`}
+      style={{
+        width: "100vw", height: "100vh", overflow: "hidden",
+        background: weatherGradient,
+        backgroundSize: "100% 200%",
+        animation: "gradientDrift 30s ease-in-out infinite",
+      }}
     >
+      {/* Atmospheric overlays */}
+      <StarsOverlay isNight={isNight} />
+      <WeatherEffectsOverlay weatherCode={weather?.weatherCode} />
+
+      {/* Overlays render at viewport level (outside scale) */}
       {config.audio.enabled && !audioUnlocked && <AudioUnlockButton onUnlock={() => setAudioUnlocked(true)} />}
       {azan.showOverlay && (
         <AzanOverlay isPlaying={azan.isPlaying} prayerName={azan.currentPrayer}
           iqamaCountdownEnd={azan.iqamaCountdownEnd} currentTime={currentTime} onDismiss={azan.dismissOverlay} />
       )}
 
-      {/* ===== LANDSCAPE: Two-column, optimized for 1920x1080 24" ===== */}
-      <div className="hidden landscape:flex flex-1 min-h-0 p-4 gap-4">
-        {/* LEFT COLUMN: ~62% */}
-        <div className="flex-[3] flex flex-col gap-3 min-w-0">
-          {/* Row 1: Clock + Next Prayer (fixed height) */}
-          <div className="flex gap-3" style={{ height: "120px" }}>
-            <Card className="flex-[3] p-5">
-              <ClockWidget {...wp} size="L" />
-            </Card>
-            <Card className="flex-[2] p-4">
-              <NextPrayerWidget {...wp} size="M" />
-            </Card>
-          </div>
+      {/* Scaled dashboard — always renders at exact 16:9 dimensions */}
+      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <main
+          className="flex flex-col overflow-hidden select-none"
+          style={{
+            width: `${DESIGN_W}px`,
+            height: `${DESIGN_H}px`,
+            transform: `scale(${scale})`,
+            transformOrigin: "center center",
+            flexShrink: 0,
+            background: "transparent",
+          }}
+        >
+          {isLandscape ? (
+            /* ===== LANDSCAPE: 1920×1080 fixed ===== */
+            <div className="flex flex-1 min-h-0 p-4 gap-4">
+              {/* LEFT COLUMN: 60% */}
+              <div className="flex-[3] flex flex-col gap-3 min-w-0">
+                {/* Row 1: Clock + Next Prayer */}
+                <div className="flex gap-3" style={{ height: "160px" }}>
+                  <Card className="flex-[3] p-5" index={0}>
+                    <ClockWidget {...wp} />
+                  </Card>
+                  <Card className="flex-[2] p-4" index={1}>
+                    <NextPrayerWidget {...wp} />
+                  </Card>
+                </div>
 
-          {/* Row 2: Prayer Times (grows) */}
-          <Card className="flex-1 p-4">
-            <PrayerTimesWidget {...wp} size="L" />
-          </Card>
+                {/* Row 2: Prayer Times + World Clock (analog) */}
+                <div className="flex gap-3 flex-1 min-h-0">
+                  <Card className="flex-[3] p-5 min-h-0" index={2}>
+                    <PrayerTimesWidget {...wp} />
+                  </Card>
+                  <Card className="flex-[1] p-3 min-h-0" index={3}>
+                    <WorldClockWidget {...wp} />
+                  </Card>
+                </div>
 
-          {/* Row 3: Weather + World Clock (fixed height) */}
-          <div className="flex gap-3" style={{ height: "240px" }}>
-            <Card className="flex-1 p-4">
-              <WeatherWidgetComponent {...wp} size="M" />
-            </Card>
-            <Card className="p-4" style={{ width: "240px" }}>
-              <WorldClockWidget {...wp} size="M" />
-            </Card>
-          </div>
-        </div>
+                {/* Row 3: Weather (full width) */}
+                <Card className="p-4" style={{ height: "270px" }} index={4}>
+                  <WeatherWidgetComponent {...wp} />
+                </Card>
 
-        {/* RIGHT COLUMN: ~38% */}
-        <div className="flex-[2] flex flex-col gap-3 min-w-0">
-          {/* Camera (takes most space) */}
-          {cameraOn ? (
-            <Card className="flex-[3]">
-              <CameraWidget {...wp} size="L" />
-            </Card>
+                {/* Row 4: News Ticker */}
+                <div className="flex-shrink-0" style={{ height: "48px" }}>
+                  <NewsTicker />
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN: 40% */}
+              <div className="flex-[2] flex flex-col gap-3 min-w-0">
+                {cameraOn ? (
+                  <div className="w-full flex-shrink-0" style={{ aspectRatio: "4 / 3" }}>
+                    <Card className="h-full" index={5}>
+                      <CameraWidget {...wp} />
+                    </Card>
+                  </div>
+                ) : (
+                  <Card className="flex-[5] min-h-0 p-4 flex items-center justify-center" index={5}>
+                    <p className="text-sm" style={{ color: "var(--text-faint)" }}>Camera not configured</p>
+                  </Card>
+                )}
+
+                <Card className="flex-[4] p-4 min-h-0" index={6}>
+                  <IslamicContentWidget {...wp} />
+                </Card>
+              </div>
+            </div>
           ) : (
-            <Card className="flex-[3] p-4 flex items-center justify-center">
-              <p className="text-sm" style={{ color: "var(--text-faint)" }}>Camera not configured</p>
-            </Card>
+            /* ===== PORTRAIT: 1080×1920 fixed ===== */
+            <div className="flex-1 flex flex-col gap-3 p-4 overflow-hidden min-h-0">
+              {/* Row 1: Clock + Next Prayer side by side */}
+              <div className="flex gap-3" style={{ height: "210px" }}>
+                <Card className="flex-[3] p-4" index={0}>
+                  <ClockWidget {...wp} />
+                </Card>
+                <Card className="flex-[2] p-3" index={1}>
+                  <NextPrayerWidget {...wp} />
+                </Card>
+              </div>
+
+              {/* Row 2: Prayer Times + (World Clock / AQI) side by side */}
+              <div className="flex gap-3 flex-[2.5] min-h-0">
+                <Card className="p-4 flex-[3] min-h-0" index={2}>
+                  <PrayerTimesWidget {...wp} />
+                </Card>
+                <div className="flex-[1] flex flex-col gap-3 min-h-0">
+                  <Card className="p-3 flex-[3] min-h-0" index={3}>
+                    <WorldClockWidget {...wp} size="H" />
+                  </Card>
+                  <Card className="p-3 flex-[1] min-h-0" index={4}>
+                    <AqiWidget {...wp} />
+                  </Card>
+                </div>
+              </div>
+
+              {/* Row 3: Camera + Islamic Content side by side */}
+              <div className="flex gap-3 flex-shrink-0" style={{ height: "440px" }}>
+                {cameraOn ? (
+                  <Card className="h-full overflow-hidden flex-shrink-0" style={{ aspectRatio: "4 / 3" }} index={5}>
+                    <CameraWidget {...wp} />
+                  </Card>
+                ) : (
+                  <Card className="h-full overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ aspectRatio: "4 / 3" }} index={5}>
+                    <p className="text-sm" style={{ color: "var(--text-faint)" }}>Camera not configured</p>
+                  </Card>
+                )}
+                <Card className="p-4 flex-1 min-w-0" index={6}>
+                  <IslamicContentWidget {...wp} />
+                </Card>
+              </div>
+
+              {/* Row 4: Weather (full width) */}
+              <Card className="p-4 flex-[1.5] min-h-0" index={7}>
+                <WeatherWidgetComponent {...wp} />
+              </Card>
+
+              {/* Row 5: News Ticker */}
+              <div className="flex-shrink-0" style={{ height: "52px" }}>
+                <NewsTicker />
+              </div>
+            </div>
           )}
 
-          {/* Hadith of the Day */}
-          <Card className="flex-[1] p-4">
-            <HadithWidget {...wp} size="M" />
-          </Card>
-
-          {/* Ayat of the Day */}
-          <Card className="flex-[1] p-4">
-            <QuranVerseWidget {...wp} size="M" />
-          </Card>
-        </div>
+          <StatusBar
+            source={prayerData?.source || null}
+            lastUpdated={prayerData?.lastUpdated || null}
+            audioReady={audioUnlocked}
+            audioEnabled={config.audio.enabled}
+            orientation={orientationOverride}
+            onOrientationChange={() => setOrientationOverride((prev) => prev === "auto" ? "landscape" : prev === "landscape" ? "portrait" : "auto")}
+          />
+        </main>
       </div>
-
-      {/* ===== PORTRAIT: Stacked, optimized for 1080x1920 ===== */}
-      <div className="landscape:hidden flex-1 flex flex-col gap-2 p-3 overflow-auto min-h-0">
-        <Card className="p-4">
-          <ClockWidget {...wp} size="M" />
-        </Card>
-        <Card className="p-3">
-          <NextPrayerWidget {...wp} size="M" />
-        </Card>
-        <Card className="p-3">
-          <PrayerTimesWidget {...wp} size="M" />
-        </Card>
-        {cameraOn && (
-          <Card className="h-56">
-            <CameraWidget {...wp} size="M" />
-          </Card>
-        )}
-        <div className="flex gap-2">
-          <Card className="flex-1 p-3">
-            <WeatherWidgetComponent {...wp} size="S" />
-          </Card>
-          <Card className="flex-1 p-3">
-            <WorldClockWidget {...wp} size="S" />
-          </Card>
-        </div>
-        <Card className="p-3">
-          <HadithWidget {...wp} size="M" />
-        </Card>
-        <Card className="p-3">
-          <QuranVerseWidget {...wp} size="M" />
-        </Card>
-      </div>
-
-      <StatusBar
-        source={prayerData?.source || null}
-        lastUpdated={prayerData?.lastUpdated || null}
-        audioReady={audioUnlocked}
-        audioEnabled={config.audio.enabled}
-      />
-    </main>
+    </div>
   );
 }

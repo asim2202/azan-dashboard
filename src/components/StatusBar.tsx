@@ -7,13 +7,23 @@ interface StatusBarProps {
   lastUpdated: string | null;
   audioReady: boolean;
   audioEnabled: boolean;
+  orientation?: "auto" | "landscape" | "portrait";
+  onOrientationChange?: () => void;
 }
+
+const ORIENT_ICONS: Record<string, string> = {
+  auto: "\u{1F504}",      // 🔄
+  landscape: "\u{1F5B5}", // 🖵
+  portrait: "\u{1F4F1}",  // 📱
+};
 
 export default function StatusBar({
   source,
   lastUpdated,
   audioReady,
   audioEnabled,
+  orientation = "auto",
+  onOrientationChange,
 }: StatusBarProps) {
   const sourceLabel = source === "iacad" ? "IACAD" : source === "calculated" ? "Calculated" : "Loading...";
 
@@ -26,7 +36,7 @@ export default function StatusBar({
     : "--:--";
 
   return (
-    <div className="flex items-center justify-between px-4 py-2 text-xs select-none" style={{ color: "var(--text-faint)" }}>
+    <div className="flex items-center justify-between px-4 py-2 text-sm select-none" style={{ color: "var(--text-muted)" }}>
       <div className="flex items-center gap-4">
         <span>Source: {sourceLabel}</span>
         <span>Updated: {updatedStr}</span>
@@ -40,6 +50,16 @@ export default function StatusBar({
           )
         ) : (
           <span title="Audio disabled">&#x1F507;</span>
+        )}
+        {onOrientationChange && (
+          <button
+            onClick={onOrientationChange}
+            className="hover:opacity-80 transition-opacity"
+            style={{ color: "var(--text-faint)" }}
+            title={`Layout: ${orientation}`}
+          >
+            {ORIENT_ICONS[orientation] || ORIENT_ICONS.auto}
+          </button>
         )}
         <Link
           href="/settings"

@@ -1,4 +1,35 @@
-import { WeatherData, WMO_CODES } from "@/types/weather";
+import { WeatherData, WMO_CODES, AirQuality } from "@/types/weather";
+
+function classifyAqi(aqi: number): { label: string; color: string } {
+  if (aqi <= 50) return { label: "Good", color: "#4ade80" };
+  if (aqi <= 100) return { label: "Moderate", color: "#facc15" };
+  if (aqi <= 150) return { label: "Unhealthy (SG)", color: "#fb923c" };
+  if (aqi <= 200) return { label: "Unhealthy", color: "#ef4444" };
+  if (aqi <= 300) return { label: "Very Unhealthy", color: "#a855f7" };
+  return { label: "Hazardous", color: "#7f1d1d" };
+}
+
+async function fetchAirQuality(latitude: number, longitude: number, timezone: string): Promise<AirQuality | undefined> {
+  try {
+    const params = new URLSearchParams({
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      timezone,
+      current: "us_aqi,pm2_5,pm10",
+    });
+    const url = `https://air-quality-api.open-meteo.com/v1/air-quality?${params}`;
+    const res = await fetch(url, { next: { revalidate: 1800 } });
+    if (!res.ok) return undefined;
+    const data = await res.json();
+    const aqi = Math.round(data.current.us_aqi ?? 0);
+    const pm25 = Math.round(data.current.pm2_5 ?? 0);
+    const pm10 = Math.round(data.current.pm10 ?? 0);
+    const { label, color } = classifyAqi(aqi);
+    return { aqi, pm25, pm10, label, color };
+  } catch {
+    return undefined;
+  }
+}
 
 export async function fetchWeather(
   latitude: number,
@@ -10,14 +41,17 @@ export async function fetchWeather(
     longitude: longitude.toString(),
     timezone: timezone,
     current: "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,apparent_temperature",
-    hourly: "temperature_2m,weather_code",
-    daily: "weather_code,temperature_2m_max,temperature_2m_min",
+    hourly: "temperature_2m,weather_code,precipitation_probability",
+    daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
     forecast_days: "7",
     forecast_hours: "12",
   });
 
   const url = `https://api.open-meteo.com/v1/forecast?${params}`;
-  const response = await fetch(url, { next: { revalidate: 1800 } });
+  const [response, airQuality] = await Promise.all([
+    fetch(url, { next: { revalidate: 1800 } }),
+    fetchAirQuality(latitude, longitude, timezone),
+  ]);
   if (!response.ok) throw new Error(`Weather API error: ${response.status}`);
 
   const data = await response.json();
@@ -33,6 +67,7 @@ export async function fetchWeather(
     return {
       time: date.toLocaleTimeString("en-US", { hour: "numeric", hour12: true, timeZone: timezone }),
       temperature: Math.round(data.hourly.temperature_2m[i]),
+      precipitationChance: data.hourly.precipitation_probability?.[i] ?? 0,
       weatherCode: hCode,
       icon: hWmo.icon,
     };
@@ -49,6 +84,7 @@ export async function fetchWeather(
       high: Math.round(data.daily.temperature_2m_max[i]),
       low: Math.round(data.daily.temperature_2m_min[i]),
       weatherCode: dCode,
+      precipitationChance: data.daily.precipitation_probability_max?.[i] ?? 0,
       icon: dWmo.icon,
       description: dWmo.description,
     };
@@ -60,9 +96,11 @@ export async function fetchWeather(
     humidity: current.relative_humidity_2m,
     weatherCode: code,
     windSpeed: Math.round(current.wind_speed_10m),
+    precipitationChance: data.hourly?.precipitation_probability?.[0] ?? 0,
     description: wmo.description,
     icon: wmo.icon,
     hourly,
     daily,
+    airQuality,
   };
 }

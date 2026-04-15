@@ -16,25 +16,29 @@ body {
   font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
 }
 
+.font-arabic {
+  font-family: var(--font-arabic), "Traditional Arabic", "Simplified Arabic", serif;
+}
+
 /* ===== Theme Variables ===== */
 
 .theme-dark {
   --bg-main: #0a0e1a;
   --bg-main-via: #0f1629;
   --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.7);
-  --text-muted: rgba(255, 255, 255, 0.4);
-  --text-faint: rgba(255, 255, 255, 0.2);
-  --card-bg: rgba(255, 255, 255, 0.05);
-  --card-bg-hover: rgba(255, 255, 255, 0.08);
+  --text-secondary: rgba(255, 255, 255, 0.9);
+  --text-muted: rgba(255, 255, 255, 0.65);
+  --text-faint: rgba(255, 255, 255, 0.45);
+  --card-bg: rgba(0, 0, 0, 0.18);
+  --card-bg-hover: rgba(0, 0, 0, 0.25);
   --accent: #f59e0b;
-  --accent-light: rgba(245, 158, 11, 0.15);
-  --accent-text: #fbbf24;
-  --accent-muted: rgba(251, 191, 36, 0.8);
-  --border: rgba(255, 255, 255, 0.1);
-  --ring-accent: rgba(245, 158, 11, 0.3);
-  --status-green: rgba(74, 222, 128, 0.6);
-  --status-amber: rgba(251, 191, 36, 0.6);
+  --accent-light: rgba(245, 158, 11, 0.2);
+  --accent-text: #fcd34d;
+  --accent-muted: rgba(252, 211, 77, 0.9);
+  --border: rgba(255, 255, 255, 0.15);
+  --ring-accent: rgba(245, 158, 11, 0.4);
+  --status-green: rgba(74, 222, 128, 0.8);
+  --status-amber: rgba(251, 191, 36, 0.8);
   --overlay-bg: rgba(0, 0, 0, 0.8);
 }
 
@@ -78,6 +82,117 @@ body {
   animation: audioBar 0.8s ease-in-out infinite;
 }
 
+/* ── Twinkling stars ── */
+@keyframes twinkle {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+/* ── Gradient drift ── */
+@keyframes gradientDrift {
+  0%   { background-position: 50% 0%; }
+  50%  { background-position: 50% 100%; }
+  100% { background-position: 50% 0%; }
+}
+
+/* ── Card entrance ── */
+@keyframes cardEntrance {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.card-animate {
+  animation: cardEntrance 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--card-i, 0) * 0.08s);
+}
+
+/* ── Card shimmer sweep ── */
+@keyframes shimmerSweep {
+  0%, 85%  { transform: translateX(-100%); }
+  100%     { transform: translateX(200%); }
+}
+
+.card-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.04) 42%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 58%,
+    transparent 65%
+  );
+  animation: shimmerSweep 25s ease-in-out infinite;
+  animation-delay: calc(var(--card-i, 0) * 3s);
+  pointer-events: none;
+}
+
+/* ── Next prayer glow ── */
+@keyframes prayerGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.2), inset 0 0 0 1px rgba(245, 158, 11, 0.4); }
+  50%      { box-shadow: 0 0 25px rgba(245, 158, 11, 0.45), inset 0 0 0 1px rgba(245, 158, 11, 0.6); }
+}
+
+.prayer-glow {
+  animation: prayerGlow 3s ease-in-out infinite;
+}
+
+/* ── Animated weather icons ── */
+@keyframes iconSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes iconFloat {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(3px); }
+}
+
+@keyframes iconBounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+@keyframes iconPulse {
+  0%, 100% { opacity: 0.8; }
+  50%      { opacity: 1; }
+}
+
+@keyframes iconFlash {
+  0%, 90%, 100% { opacity: 1; }
+  93%           { opacity: 0.3; }
+  96%           { opacity: 1; }
+  98%           { opacity: 0.5; }
+}
+
+.icon-spin   { animation: iconSpin 20s linear infinite; }
+.icon-float  { animation: iconFloat 4s ease-in-out infinite; }
+.icon-bounce { animation: iconBounce 2s ease-in-out infinite; }
+.icon-pulse  { animation: iconPulse 3s ease-in-out infinite; }
+.icon-flash  { animation: iconFlash 6s ease-in-out infinite; }
+
+/* ── Rain / snow overlay ── */
+@keyframes rainDrop {
+  0%   { transform: translateY(-5vh); opacity: 0; }
+  10%  { opacity: 0.3; }
+  90%  { opacity: 0.25; }
+  100% { transform: translateY(110vh); opacity: 0; }
+}
+
+@keyframes snowFall {
+  0%   { transform: translateY(-5vh) translateX(0) rotate(0deg); opacity: 0; }
+  10%  { opacity: 0.5; }
+  90%  { opacity: 0.4; }
+  100% { transform: translateY(110vh) translateX(30px) rotate(360deg); opacity: 0; }
+}
+
 /* ===== Form inputs for settings ===== */
 
 .input-field {
@@ -99,4 +214,19 @@ body {
 .input-field option {
   background: #1a1a2e;
   color: white;
+}
+
+/* ===== News Ticker ===== */
+
+@keyframes tickerScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.news-ticker-scroll {
+  animation: tickerScroll 60s linear infinite;
+}
+
+.news-ticker-scroll:hover {
+  animation-play-state: paused;
 }

@@ -42,13 +42,14 @@ export default function QuranVerseWidget({ size }: WidgetProps) {
   }
 
   return (
-    <div className="h-full flex flex-col justify-center select-none px-2">
+    <div className="h-full flex flex-col justify-center select-none overflow-hidden px-2">
+      <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "var(--text-faint)" }}>Ayah of the Day</p>
       <p className="text-right text-lg sm:text-xl leading-relaxed mb-2 font-arabic" style={{ color: "var(--text-primary)", direction: "rtl" }}>
-        {verse.arabic}
+        {verse.arabic.length > 200 ? verse.arabic.substring(0, 200) + "..." : verse.arabic}
       </p>
-      {size === "L" && (
+      {size !== "S" && (
         <p className="text-sm leading-relaxed italic" style={{ color: "var(--text-secondary)" }}>
-          &ldquo;{verse.translation}&rdquo;
+          &ldquo;{verse.translation.length > 300 ? verse.translation.substring(0, 300) + "..." : verse.translation}&rdquo;
         </p>
       )}
       <p className="text-xs mt-2 text-right" style={{ color: "var(--accent-text)" }}>

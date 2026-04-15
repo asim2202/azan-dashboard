@@ -3,8 +3,6 @@
 import type { WidgetProps } from "@/types/widget";
 import type { PrayerTime, PrayerName } from "@/types/prayer";
 
-const AZAN_PRAYERS: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
-
 function fmtTime(date: Date, tz: string, fmt: "12h" | "24h"): string {
   return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZone: tz, hour12: fmt === "12h" });
 }
@@ -22,19 +20,25 @@ export default function PrayerTimesWidget({ size, currentTime, timezone, config,
   const fmt = config.display.timeFormat;
   const nextName = nextPrayer?.name || null;
 
-  // Small: compact rows, no iqama
-  if (size === "S") {
+  if (size === "H") {
+    // Horizontal (landscape): full card rows with arabic labels
     return (
-      <div className="flex flex-col gap-0.5 h-full justify-center">
+      <div className="flex flex-col gap-2 h-full">
         {prayers.map((p) => {
           const status = getStatus(p, currentTime, nextName);
           const isNext = status === "next";
           return (
-            <div key={p.name} className={`flex justify-between px-2 py-0.5 rounded ${status === "past" ? "opacity-40" : ""}`}
-              style={{ background: isNext ? "var(--accent-light)" : "transparent" }}>
-              <span className="text-xs" style={{ color: isNext ? "var(--accent-text)" : "var(--text-muted)" }}>{p.label}</span>
-              <span className="text-xs font-medium" style={{ fontVariantNumeric: "tabular-nums", color: isNext ? "var(--text-primary)" : "var(--text-secondary)" }}>
+            <div key={p.name} className={`flex-1 flex items-center justify-between px-6 rounded-xl ${status === "past" ? "opacity-40" : ""} ${isNext ? "prayer-glow" : ""}`}
+              style={{ background: isNext ? "var(--accent-light)" : "var(--card-bg-hover, var(--card-bg))" }}>
+              <div className="min-w-[150px]">
+                <span className="text-lg font-semibold" style={{ color: isNext ? "var(--accent-text)" : "var(--text-primary)" }}>{p.label}</span>
+                <span className="text-base ml-2" style={{ color: "var(--text-muted)" }}>{p.arabicLabel}</span>
+              </div>
+              <span className="text-3xl font-semibold" style={{ fontVariantNumeric: "tabular-nums", color: "var(--text-primary)" }}>
                 {fmtTime(p.azanDate, timezone, fmt)}
+              </span>
+              <span className="text-base font-medium min-w-[160px] text-right" style={{ fontVariantNumeric: "tabular-nums", color: isNext ? "var(--accent-text)" : "var(--text-secondary)" }}>
+                {p.iqamaDate ? `Iqama ${fmtTime(p.iqamaDate, timezone, fmt)}` : "\u2014"}
               </span>
             </div>
           );
@@ -43,48 +47,24 @@ export default function PrayerTimesWidget({ size, currentTime, timezone, config,
     );
   }
 
-  // Medium: rows with iqama
-  if (size === "M") {
-    return (
-      <div className="flex flex-col gap-1 h-full justify-center">
-        {prayers.map((p) => {
-          const status = getStatus(p, currentTime, nextName);
-          const isNext = status === "next";
-          return (
-            <div key={p.name} className={`flex items-center justify-between px-3 py-1.5 rounded-lg ${status === "past" ? "opacity-40" : ""}`}
-              style={{ background: isNext ? "var(--accent-light)" : "transparent", boxShadow: isNext ? "inset 0 0 0 1px var(--ring-accent)" : "none" }}>
-              <span className="text-sm min-w-[70px]" style={{ color: isNext ? "var(--accent-text)" : "var(--text-muted)" }}>{p.label}</span>
-              <span className="text-base font-medium" style={{ fontVariantNumeric: "tabular-nums", color: isNext ? "var(--text-primary)" : "var(--text-secondary)" }}>
-                {fmtTime(p.azanDate, timezone, fmt)}
-              </span>
-              <span className="text-xs min-w-[90px] text-right" style={{ fontVariantNumeric: "tabular-nums", color: isNext ? "var(--accent-muted)" : "var(--text-faint)" }}>
-                {p.iqamaDate ? `Iqama: ${fmtTime(p.iqamaDate, timezone, fmt)}` : "\u2014"}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
-  // Large: full cards with arabic
+  // Vertical (portrait): larger text for readability
   return (
-    <div className="flex flex-col gap-1.5 h-full justify-center">
+    <div className="flex flex-col gap-2 h-full">
       {prayers.map((p) => {
         const status = getStatus(p, currentTime, nextName);
         const isNext = status === "next";
         return (
-          <div key={p.name} className={`flex items-center justify-between px-4 py-2 rounded-xl ${status === "past" ? "opacity-40" : ""}`}
-            style={{ background: isNext ? "var(--accent-light)" : "var(--card-bg-hover, var(--card-bg))", boxShadow: isNext ? "inset 0 0 0 1px var(--ring-accent)" : "none" }}>
-            <div className="min-w-[110px]">
-              <span className="text-sm font-medium" style={{ color: isNext ? "var(--accent-text)" : "var(--text-secondary)" }}>{p.label}</span>
-              <span className="text-xs ml-2" style={{ color: "var(--text-faint)" }}>{p.arabicLabel}</span>
+          <div key={p.name} className={`flex-1 flex items-center justify-between px-5 rounded-xl ${status === "past" ? "opacity-40" : ""} ${isNext ? "prayer-glow" : ""}`}
+            style={{ background: isNext ? "var(--accent-light)" : "var(--card-bg-hover, var(--card-bg))" }}>
+            <div className="min-w-[200px]">
+              <span className="text-2xl font-semibold" style={{ color: isNext ? "var(--accent-text)" : "var(--text-primary)" }}>{p.label}</span>
+              <span className="text-2xl ml-2 font-arabic" style={{ color: "var(--text-muted)" }}>{p.arabicLabel}</span>
             </div>
-            <span className="text-xl font-medium" style={{ fontVariantNumeric: "tabular-nums", color: isNext ? "var(--text-primary)" : "var(--text-secondary)" }}>
+            <span className="text-4xl font-semibold" style={{ fontVariantNumeric: "tabular-nums", color: "var(--text-primary)" }}>
               {fmtTime(p.azanDate, timezone, fmt)}
             </span>
-            <span className="text-sm min-w-[110px] text-right" style={{ fontVariantNumeric: "tabular-nums", color: isNext ? "var(--accent-muted)" : "var(--text-muted)" }}>
-              {p.iqamaDate ? `Iqama: ${fmtTime(p.iqamaDate, timezone, fmt)}` : "\u2014"}
+            <span className="text-xl font-semibold min-w-[190px] text-right" style={{ fontVariantNumeric: "tabular-nums", color: isNext ? "var(--accent-text)" : "var(--text-secondary)" }}>
+              {p.iqamaDate ? `Iqama ${fmtTime(p.iqamaDate, timezone, fmt)}` : "\u2014"}
             </span>
           </div>
         );

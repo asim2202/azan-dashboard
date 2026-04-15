@@ -25,30 +25,31 @@ export default function ClockWidget({ size, currentTime, timezone, config }: Wid
   });
   const hijri = getHijriDate(currentTime, timezone);
 
-  const clockSize = size === "S" ? "text-4xl" : size === "M" ? "text-5xl sm:text-6xl" : "text-6xl sm:text-7xl md:text-8xl";
-  const periodSize = size === "S" ? "text-lg" : "text-xl sm:text-2xl";
+  if (size === "H") {
+    // Horizontal (landscape): large time, date + hijri below
+    return (
+      <div className="text-center select-none h-full flex flex-col justify-center">
+        <div className="flex items-baseline justify-center gap-2">
+          <span className="text-6xl sm:text-7xl md:text-8xl font-light tracking-tight"
+            style={{ fontVariantNumeric: "tabular-nums", color: "var(--text-primary)" }}>{mainTime}</span>
+          {period && <span className="text-xl sm:text-2xl font-light" style={{ color: "var(--text-muted)" }}>{period}</span>}
+        </div>
+        <p className="mt-1 text-base font-medium" style={{ color: "var(--text-secondary)" }}>{gregorian}</p>
+        <p className="text-base font-medium" style={{ color: "var(--text-secondary)" }}>{hijri.formatted}</p>
+      </div>
+    );
+  }
 
+  // Vertical (portrait): larger text for readability
   return (
     <div className="text-center select-none h-full flex flex-col justify-center">
       <div className="flex items-baseline justify-center gap-2">
-        <span
-          className={`${clockSize} font-light tracking-tight`}
-          style={{ fontVariantNumeric: "tabular-nums", color: "var(--text-primary)" }}
-        >
-          {mainTime}
-        </span>
-        {period && (
-          <span className={`${periodSize} font-light`} style={{ color: "var(--text-muted)" }}>
-            {period}
-          </span>
-        )}
+        <span className="text-8xl font-light tracking-tight"
+          style={{ fontVariantNumeric: "tabular-nums", color: "var(--text-primary)" }}>{mainTime}</span>
+        {period && <span className="text-3xl font-light" style={{ color: "var(--text-muted)" }}>{period}</span>}
       </div>
-      {size !== "S" && (
-        <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>{gregorian}</p>
-      )}
-      {size === "L" && (
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>{hijri.formatted}</p>
-      )}
+      <p className="mt-1 text-lg font-medium" style={{ color: "var(--text-secondary)" }}>{gregorian}</p>
+      <p className="text-lg font-medium" style={{ color: "var(--text-secondary)" }}>{hijri.formatted}</p>
     </div>
   );
 }

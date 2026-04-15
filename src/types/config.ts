@@ -34,7 +34,7 @@ export interface CameraConfig {
   refreshInterval: number;
 }
 
-export type WidgetSize = "S" | "M" | "L";
+export type WidgetSize = "H" | "V";
 
 export interface WidgetGridItem {
   i: string;

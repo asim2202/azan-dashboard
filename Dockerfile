@@ -68,7 +68,7 @@ if [ -n "$CAMERA_URL" ] && [ "$CAMERA_ENABLED" = "true" ]; then\n\
   echo "[entrypoint] Starting ffmpeg for camera: $CAMERA_URL"\n\
   ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp \\\n\
     -i "$CAMERA_URL" \\\n\
-    -c copy -f rtsp \\\n\
+    -c copy -f rtsp -rtsp_transport tcp \\\n\
     rtsp://127.0.0.1:8554/frontdoor &\n\
   sleep 1\n\
   echo "[entrypoint] ffmpeg started, stream at rtsp://localhost:8554/frontdoor"\n\

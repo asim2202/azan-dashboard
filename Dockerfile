@@ -56,13 +56,21 @@ if [ -f /app/config/default.json ]; then\n\
   CAMERA_ENABLED=$(jq -r ".camera.enabled // false" /app/config/default.json 2>/dev/null)\n\
 fi\n\
 \n\
-# Convert rtsps:// to rtspx:// for go2rtc (RTSP+TLS without cert verify)\n\
-GO2RTC_URL=$(echo "$CAMERA_URL" | sed "s|^rtsps://|rtspx://|" | sed "s|[?&]enableSrtp||g")\n\
+# Convert rtsps:// to rtspx:// for go2rtc\n\
+GO2RTC_URL="$CAMERA_URL"\n\
+case "$GO2RTC_URL" in\n\
+  rtsps://*) GO2RTC_URL="rtspx://${GO2RTC_URL#rtsps://}" ;;\n\
+esac\n\
+# Strip enableSrtp param\n\
+GO2RTC_URL=$(echo "$GO2RTC_URL" | sed "s/[?&]enableSrtp//g")\n\
+\n\
+echo "[entrypoint] Camera URL: $CAMERA_URL"\n\
+echo "[entrypoint] go2rtc URL: $GO2RTC_URL"\n\
 \n\
 # Write go2rtc config\n\
 if [ -n "$GO2RTC_URL" ] && [ "$CAMERA_ENABLED" = "true" ]; then\n\
   printf "api:\\n  listen: \\":1984\\"\\nrtsp:\\n  listen: \\":8554\\"\\nstreams:\\n  frontdoor: \\"%s\\"\\n" "$GO2RTC_URL" > /tmp/go2rtc.yaml\n\
-  echo "[entrypoint] go2rtc stream: $GO2RTC_URL"\n\
+  echo "[entrypoint] go2rtc config written"\n\
 else\n\
   printf "api:\\n  listen: \\":1984\\"\\nrtsp:\\n  listen: \\":8554\\"\\nstreams: {}\\n" > /tmp/go2rtc.yaml\n\
   echo "[entrypoint] No camera configured"\n\

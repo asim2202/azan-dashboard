@@ -9,7 +9,7 @@ interface CameraFeedProps {
 
 export default function CameraFeed({ config }: CameraFeedProps) {
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
-  const [feedType, setFeedType] = useState(config.type);
+  const [feedType, setFeedType] = useState<"image" | "iframe" | "video">(config.type);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -26,9 +26,9 @@ export default function CameraFeed({ config }: CameraFeedProps) {
           if (data.source === "go2rtc" && data.streamName) {
             const host = window.location.hostname;
             const port = data.go2rtcPort || 1984;
-            // Use MSE mode - most compatible with UniFi cameras
-            setStreamUrl(`http://${host}:${port}/stream.html?src=${data.streamName}&mode=mse`);
-            setFeedType("iframe");
+            // Use MP4 stream directly - smoothest for UniFi cameras
+            setStreamUrl(`http://${host}:${port}/api/stream.mp4?src=${data.streamName}`);
+            setFeedType("video");
             setError(false);
           } else if (data.streamUrl) {
             setStreamUrl(data.streamUrl);
@@ -73,6 +73,19 @@ export default function CameraFeed({ config }: CameraFeedProps) {
       <div className="w-full h-full flex items-center justify-center rounded-xl" style={{ background: "var(--card-bg)" }}>
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>Camera unavailable</p>
       </div>
+    );
+  }
+
+  if (feedType === "video") {
+    return (
+      <video
+        src={streamUrl}
+        autoPlay
+        muted
+        playsInline
+        className="w-full h-full object-cover rounded-xl"
+        style={{ background: "#000" }}
+      />
     );
   }
 

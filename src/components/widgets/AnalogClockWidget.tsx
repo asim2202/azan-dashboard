@@ -11,7 +11,7 @@ export default function AnalogClockWidget({ size, currentTime, timezone }: Widge
   const minuteDeg = m * 6 + s * 0.1;
   const secondDeg = s * 6;
 
-  const clockSize = size === "S" ? 100 : size === "M" ? 160 : 220;
+  const clockSize = size === "H" ? 160 : 220;
   const cx = clockSize / 2;
 
   return (

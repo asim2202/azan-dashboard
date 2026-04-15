@@ -28,7 +28,7 @@ export default function IqamaCountdownWidget({ size, currentTime, prayerData }: 
   const secs = totalSec % 60;
   const isUrgent = ms > 0 && ms < 5 * 60 * 1000;
 
-  if (size === "S") {
+  if (size === "H") {
     return (
       <div className="h-full flex flex-col items-center justify-center select-none">
         <p className="text-xs" style={{ color: "var(--accent-text)" }}>Iqama {nextIqama.label}</p>

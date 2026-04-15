@@ -47,7 +47,7 @@ export default function QuranVerseWidget({ size }: WidgetProps) {
       <p className="text-right text-lg sm:text-xl leading-relaxed mb-2 font-arabic" style={{ color: "var(--text-primary)", direction: "rtl" }}>
         {verse.arabic.length > 200 ? verse.arabic.substring(0, 200) + "..." : verse.arabic}
       </p>
-      {size !== "S" && (
+      {size !== "H" && (
         <p className="text-sm leading-relaxed italic" style={{ color: "var(--text-secondary)" }}>
           &ldquo;{verse.translation.length > 300 ? verse.translation.substring(0, 300) + "..." : verse.translation}&rdquo;
         </p>

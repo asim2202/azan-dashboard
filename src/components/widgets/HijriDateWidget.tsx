@@ -6,7 +6,7 @@ import { getHijriDate } from "@/lib/hijri";
 export default function HijriDateWidget({ size, currentTime, timezone }: WidgetProps) {
   const hijri = getHijriDate(currentTime, timezone);
 
-  if (size === "S") {
+  if (size === "H") {
     return (
       <div className="h-full flex flex-col items-center justify-center select-none">
         <p className="text-2xl font-light" style={{ color: "var(--text-primary)" }}>{hijri.day}</p>

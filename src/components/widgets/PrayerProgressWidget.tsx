@@ -30,7 +30,7 @@ export default function PrayerProgressWidget({ size, currentTime, prayerData }: 
     progress = Math.min(1, Math.max(0, elapsed / total));
   }
 
-  if (size === "S") {
+  if (size === "H") {
     return (
       <div className="h-full flex flex-col justify-center px-2 select-none">
         <div className="flex justify-between text-xs mb-1">

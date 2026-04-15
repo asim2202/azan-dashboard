@@ -50,7 +50,9 @@ function useAutoScroll(deps: unknown[]) {
       let phase: "pause-start" | "scrolling" | "pause-end" = "pause-start";
       let phaseStart = 0;
 
+      const el = outer; // capture non-null ref for closure
       function tick(timestamp: number) {
+        if (!el) return;
         if (!startTime) {
           startTime = timestamp;
           phaseStart = timestamp;
@@ -69,7 +71,7 @@ function useAutoScroll(deps: unknown[]) {
           const eased = progress < 0.5
             ? 2 * progress * progress
             : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-          outer.scrollTop = eased * overflow;
+          el.scrollTop = eased * overflow;
 
           if (progress >= 1) {
             phase = "pause-end";
@@ -78,7 +80,7 @@ function useAutoScroll(deps: unknown[]) {
         } else if (phase === "pause-end") {
           if (elapsed >= pauseEnd) {
             // Reset and loop
-            outer.scrollTop = 0;
+            el.scrollTop = 0;
             phase = "pause-start";
             phaseStart = timestamp;
           }

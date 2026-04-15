@@ -26,9 +26,8 @@ export default function CameraFeed({ config }: CameraFeedProps) {
           if (data.source === "go2rtc" && data.streamName) {
             const host = window.location.hostname;
             const port = data.go2rtcPort || 1984;
-            // Use go2rtc's built-in web player (WebRTC/MSE) - no transcoding needed
-            // Falls back to MJPEG if ffmpeg is available
-            setStreamUrl(`http://${host}:${port}/stream.html?src=${data.streamName}&mode=webrtc,mse,mp4,mjpeg`);
+            // Use MSE mode - most compatible with UniFi cameras
+            setStreamUrl(`http://${host}:${port}/stream.html?src=${data.streamName}&mode=mse`);
             setFeedType("iframe");
             setError(false);
           } else if (data.streamUrl) {

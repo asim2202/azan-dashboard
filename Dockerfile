@@ -36,7 +36,6 @@ RUN apk add --no-cache curl ffmpeg jq && \
 # Copy standalone output
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
 
 # Config and data directories (mountable volumes)
 RUN mkdir -p /app/config /app/data /app/public/audio

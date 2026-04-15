@@ -5,9 +5,18 @@ import type { AppConfig } from "@/types/config";
 const GO2RTC_CONFIG = "/tmp/go2rtc.yaml";
 
 function updateGo2rtcConfig(cameraUrl: string) {
-  // go2rtc config - streams are empty because ffmpeg pushes directly
-  // to go2rtc's RTSP server as a separate process
-  const streamSource = "";
+  // Convert rtsps:// to rtspx:// for go2rtc (RTSP over TLS without cert verification)
+  // This is the correct way to handle UniFi Protect RTSPS streams
+  let go2rtcUrl = cameraUrl;
+  if (go2rtcUrl.startsWith("rtsps://")) {
+    go2rtcUrl = go2rtcUrl.replace("rtsps://", "rtspx://");
+  }
+  // Remove ?enableSrtp if present (go2rtc handles this natively)
+  go2rtcUrl = go2rtcUrl.replace(/[?&]enableSrtp/g, "");
+
+  const streamSource = go2rtcUrl
+    ? `\n  frontdoor: "${go2rtcUrl}"`
+    : "";
   const yaml = `api:
   listen: ":1984"
 rtsp:

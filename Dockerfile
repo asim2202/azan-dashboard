@@ -56,25 +56,21 @@ if [ -f /app/config/default.json ]; then\n\
   CAMERA_ENABLED=$(jq -r ".camera.enabled // false" /app/config/default.json 2>/dev/null)\n\
 fi\n\
 \n\
-# Write go2rtc config (empty streams - ffmpeg pushes directly)\n\
-printf "api:\\n  listen: \\":1984\\"\\nrtsp:\\n  listen: \\":8554\\"\\nstreams: {}\\n" > /tmp/go2rtc.yaml\n\
+# Convert rtsps:// to rtspx:// for go2rtc (RTSP+TLS without cert verify)\n\
+GO2RTC_URL=$(echo "$CAMERA_URL" | sed "s|^rtsps://|rtspx://|" | sed "s|[?&]enableSrtp||g")\n\
+\n\
+# Write go2rtc config\n\
+if [ -n "$GO2RTC_URL" ] && [ "$CAMERA_ENABLED" = "true" ]; then\n\
+  printf "api:\\n  listen: \\":1984\\"\\nrtsp:\\n  listen: \\":8554\\"\\nstreams:\\n  frontdoor: \\"%s\\"\\n" "$GO2RTC_URL" > /tmp/go2rtc.yaml\n\
+  echo "[entrypoint] go2rtc stream: $GO2RTC_URL"\n\
+else\n\
+  printf "api:\\n  listen: \\":1984\\"\\nrtsp:\\n  listen: \\":8554\\"\\nstreams: {}\\n" > /tmp/go2rtc.yaml\n\
+  echo "[entrypoint] No camera configured"\n\
+fi\n\
 \n\
 # Start go2rtc\n\
 go2rtc -config /tmp/go2rtc.yaml &\n\
-sleep 2\n\
-\n\
-# Start ffmpeg to push camera stream to go2rtc RTSP server\n\
-if [ -n "$CAMERA_URL" ] && [ "$CAMERA_ENABLED" = "true" ]; then\n\
-  echo "[entrypoint] Starting ffmpeg for camera: $CAMERA_URL"\n\
-  ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp \\\n\
-    -i "$CAMERA_URL" \\\n\
-    -c copy -f rtsp -rtsp_transport tcp \\\n\
-    rtsp://127.0.0.1:8554/frontdoor &\n\
-  sleep 1\n\
-  echo "[entrypoint] ffmpeg started, stream at rtsp://localhost:8554/frontdoor"\n\
-else\n\
-  echo "[entrypoint] No camera configured"\n\
-fi\n\
+sleep 1\n\
 \n\
 # Start Next.js\n\
 exec node server.js\n' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh

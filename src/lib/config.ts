@@ -23,8 +23,8 @@ const DEFAULT_CONFIG: AppConfig = {
   },
   audio: {
     enabled: true,
-    defaultAzan: "/audio/azan-makkah.mp3",
-    fajrAzan: "/audio/azan-fajr.mp3",
+    defaultAzan: "",
+    fajrAzan: "",
     iqamaSound: "",
     volume: 0.8,
     preIqamaAlert: {
@@ -97,6 +97,21 @@ export function getConfig(): AppConfig {
   if (serverCache) return serverCache;
 
   const config = readConfigFromDisk();
+
+  // Migrate old /audio/ paths to /api/audio-serve?file= paths
+  function migrateAudioPath(p: string): string {
+    if (p && p.startsWith("/audio/") && !p.startsWith("/api/")) {
+      const filename = p.replace("/audio/", "");
+      return `/api/audio-serve?file=${encodeURIComponent(filename)}`;
+    }
+    return p;
+  }
+  config.audio.defaultAzan = migrateAudioPath(config.audio.defaultAzan);
+  config.audio.fajrAzan = migrateAudioPath(config.audio.fajrAzan);
+  config.audio.iqamaSound = migrateAudioPath(config.audio.iqamaSound);
+  if (config.audio.preIqamaAlert) {
+    config.audio.preIqamaAlert.sound = migrateAudioPath(config.audio.preIqamaAlert.sound);
+  }
 
   // Override from environment variables (highest priority)
   if (process.env.LATITUDE) config.location.latitude = parseFloat(process.env.LATITUDE);

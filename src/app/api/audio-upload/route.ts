@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       success: true,
       file: {
         name: safeName,
-        path: `/audio/${safeName}`,
+        path: `/api/audio-serve?file=${encodeURIComponent(safeName)}`,
         size: file.size,
       },
     });

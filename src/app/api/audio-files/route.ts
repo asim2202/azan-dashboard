@@ -17,7 +17,7 @@ export async function GET() {
         const stat = fs.statSync(path.join(AUDIO_DIR, f));
         return {
           name: f,
-          path: `/audio/${f}`,
+          path: `/api/audio-serve?file=${encodeURIComponent(f)}`,
           size: stat.size,
           modified: stat.mtime.toISOString(),
         };

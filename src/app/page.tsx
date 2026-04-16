@@ -32,7 +32,7 @@ const DEFAULT_CONFIG: AppConfig = {
   madhab: "Shafi",
   iqamaOffsets: { fajr: 20, dhuhr: 25, asr: 15, maghrib: 5, isha: 15 },
   audio: {
-    enabled: true, defaultAzan: "/audio/azan-makkah.mp3", fajrAzan: "/audio/azan-fajr.mp3", iqamaSound: "", volume: 0.8,
+    enabled: true, defaultAzan: "", fajrAzan: "", iqamaSound: "", volume: 0.8,
     preIqamaAlert: { enabled: false, sound: "", offsets: { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 } },
   },
   display: { timeFormat: "12h", showSeconds: true, theme: "auto" },
@@ -295,6 +295,15 @@ export default function Home() {
             audioEnabled={config.audio.enabled}
             orientation={orientationOverride}
             onOrientationChange={() => setOrientationOverride((prev) => prev === "auto" ? "landscape" : prev === "landscape" ? "portrait" : "auto")}
+            onTestAzan={() => {
+              const src = config.audio.defaultAzan;
+              if (src && azan.audioRef.current) {
+                const audio = azan.audioRef.current;
+                audio.src = src;
+                audio.volume = config.audio.volume;
+                audio.play().catch((err) => console.error("[Test Azan] Failed:", err));
+              }
+            }}
           />
         </main>
       </div>

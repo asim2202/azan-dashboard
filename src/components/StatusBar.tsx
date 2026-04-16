@@ -9,6 +9,7 @@ interface StatusBarProps {
   audioEnabled: boolean;
   orientation?: "auto" | "landscape" | "portrait";
   onOrientationChange?: () => void;
+  onTestAzan?: () => void;
 }
 
 const ORIENT_ICONS: Record<string, string> = {
@@ -24,6 +25,7 @@ export default function StatusBar({
   audioEnabled,
   orientation = "auto",
   onOrientationChange,
+  onTestAzan,
 }: StatusBarProps) {
   const sourceLabel = source === "iacad" ? "IACAD" : source === "calculated" ? "Calculated" : "Loading...";
 
@@ -50,6 +52,16 @@ export default function StatusBar({
           )
         ) : (
           <span title="Audio disabled">&#x1F507;</span>
+        )}
+        {onTestAzan && audioReady && (
+          <button
+            onClick={onTestAzan}
+            className="hover:opacity-80 transition-opacity"
+            style={{ color: "var(--text-faint)" }}
+            title="Test Azan"
+          >
+            &#x1F3B5;
+          </button>
         )}
         {onOrientationChange && (
           <button

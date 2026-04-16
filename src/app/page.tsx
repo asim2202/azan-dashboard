@@ -31,7 +31,10 @@ const DEFAULT_CONFIG: AppConfig = {
   calculationMethod: "Dubai",
   madhab: "Shafi",
   iqamaOffsets: { fajr: 20, dhuhr: 25, asr: 15, maghrib: 5, isha: 15 },
-  audio: { enabled: true, defaultAzan: "/audio/azan-makkah.mp3", fajrAzan: "/audio/azan-fajr.mp3", iqamaSound: "", volume: 0.8 },
+  audio: {
+    enabled: true, defaultAzan: "/audio/azan-makkah.mp3", fajrAzan: "/audio/azan-fajr.mp3", iqamaSound: "", volume: 0.8,
+    preIqamaAlert: { enabled: false, sound: "", offsets: { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 } },
+  },
   display: { timeFormat: "12h", showSeconds: true, theme: "auto" },
   camera: { enabled: false, url: "", type: "image", refreshInterval: 0 },
   layout: { widgets: DEFAULT_GRID_WIDGETS },
@@ -89,7 +92,8 @@ export default function Home() {
 
   const azan = useAzan(
     prayerData?.prayers, currentTime, config.audio.enabled, audioUnlocked,
-    config.audio.defaultAzan, config.audio.fajrAzan, config.audio.iqamaSound, config.audio.volume
+    config.audio.defaultAzan, config.audio.fajrAzan, config.audio.iqamaSound, config.audio.volume,
+    config.audio.preIqamaAlert
   );
 
   useEffect(() => { fetch("/api/config").then((r) => r.json()).then(setConfig).catch(() => {}); }, []);

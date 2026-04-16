@@ -13,12 +13,25 @@ export interface IqamaOffsets {
   isha: number;
 }
 
+export interface PreIqamaAlertOffsets {
+  fajr: number;    // minutes before iqama, 0 = disabled
+  dhuhr: number;
+  asr: number;
+  maghrib: number;
+  isha: number;
+}
+
 export interface AudioConfig {
   enabled: boolean;
   defaultAzan: string;
   fajrAzan: string;
   iqamaSound: string;
   volume: number;
+  preIqamaAlert: {
+    enabled: boolean;
+    sound: string;
+    offsets: PreIqamaAlertOffsets;
+  };
 }
 
 export interface DisplayConfig {

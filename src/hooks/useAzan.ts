@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { PrayerTime, PrayerName } from "@/types/prayer";
+import type { PreIqamaAlertOffsets } from "@/types/config";
 
 interface AzanState {
   isPlaying: boolean;
@@ -20,7 +21,8 @@ export function useAzan(
   defaultAzan: string,
   fajrAzan: string,
   iqamaSound: string,
-  volume: number
+  volume: number,
+  preIqamaAlert?: { enabled: boolean; sound: string; offsets: PreIqamaAlertOffsets }
 ) {
   const [state, setState] = useState<AzanState>({
     isPlaying: false,
@@ -71,6 +73,39 @@ export function useAzan(
 
       const azanKey = `${prayer.name}-azan`;
       const iqamaKey = `${prayer.name}-iqama`;
+      const preIqamaKey = `${prayer.name}-preiqama`;
+
+      // Check pre-iqama alert trigger
+      if (
+        preIqamaAlert?.enabled &&
+        preIqamaAlert.sound &&
+        prayer.iqamaDate &&
+        !triggeredRef.current.has(preIqamaKey)
+      ) {
+        const minutesBefore = preIqamaAlert.offsets[prayer.name as keyof PreIqamaAlertOffsets] || 0;
+        if (minutesBefore > 0) {
+          const alertTime = prayer.iqamaDate.getTime() - minutesBefore * 60000;
+          const alertDiff = now - alertTime;
+          if (alertDiff >= 0 && alertDiff < 60000) {
+            triggeredRef.current.add(preIqamaKey);
+            const audio = audioRef.current;
+            if (audio) {
+              audio.src = preIqamaAlert.sound;
+              audio.volume = volume;
+              audio.play().catch((err) => {
+                console.error("[Pre-Iqama Alert] Playback failed:", err);
+              });
+            }
+            setState({
+              isPlaying: true,
+              currentPrayer: prayer.name,
+              showOverlay: false, // No overlay for pre-iqama alert
+              iqamaCountdownEnd: null,
+            });
+            return;
+          }
+        }
+      }
 
       // Check iqama trigger first (if iqama sound is configured)
       if (
@@ -128,7 +163,7 @@ export function useAzan(
         break;
       }
     }
-  }, [prayers, currentTime, audioEnabled, audioUnlocked, defaultAzan, fajrAzan, iqamaSound, volume, state.isPlaying]);
+  }, [prayers, currentTime, audioEnabled, audioUnlocked, defaultAzan, fajrAzan, iqamaSound, volume, state.isPlaying, preIqamaAlert]);
 
   const dismissOverlay = useCallback(() => {
     setState((prev) => ({ ...prev, showOverlay: false }));

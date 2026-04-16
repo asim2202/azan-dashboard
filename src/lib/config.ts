@@ -27,6 +27,11 @@ const DEFAULT_CONFIG: AppConfig = {
     fajrAzan: "/audio/azan-fajr.mp3",
     iqamaSound: "",
     volume: 0.8,
+    preIqamaAlert: {
+      enabled: false,
+      sound: "",
+      offsets: { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
+    },
   },
   display: {
     timeFormat: "12h",

@@ -316,6 +316,52 @@ export default function SettingsPage() {
             </select>
           </Field>
 
+          {/* Pre-Iqama Alert */}
+          <div className="mt-5 pt-5 border-t border-white/10">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <span className="text-sm text-white/70">Pre-Iqama Alert</span>
+                <p className="text-xs text-white/30">Play a sound X minutes before iqama starts</p>
+              </div>
+              <Toggle
+                checked={config.audio.preIqamaAlert?.enabled || false}
+                onChange={(v) => updateConfig("audio.preIqamaAlert.enabled", v)}
+              />
+            </div>
+
+            {config.audio.preIqamaAlert?.enabled && (
+              <>
+                <Field label="Alert Sound">
+                  <select
+                    value={config.audio.preIqamaAlert?.sound || ""}
+                    onChange={(e) => updateConfig("audio.preIqamaAlert.sound", e.target.value)}
+                    className="input-field"
+                  >
+                    {audioOptions.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </Field>
+
+                <p className="text-sm text-white/50 mb-2">Minutes before Iqama (0 = no alert for that prayer)</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {(["fajr", "dhuhr", "asr", "maghrib", "isha"] as const).map((prayer) => (
+                    <Field key={prayer} label={prayer.charAt(0).toUpperCase() + prayer.slice(1)}>
+                      <input
+                        type="number"
+                        min="0"
+                        max="30"
+                        value={config.audio.preIqamaAlert?.offsets?.[prayer] || 0}
+                        onChange={(e) => updateConfig(`audio.preIqamaAlert.offsets.${prayer}`, parseInt(e.target.value) || 0)}
+                        className="input-field"
+                      />
+                    </Field>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
           {/* Upload */}
           <div className="mt-4 pt-4 border-t border-white/10">
             <p className="text-sm text-white/50 mb-2">Upload Audio File</p>

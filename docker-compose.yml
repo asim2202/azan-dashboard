@@ -4,7 +4,9 @@ services:
     container_name: azan-clock
     ports:
       - "3000:3000"
-      - "1984:1984"  # go2rtc RTSP-to-MJPEG proxy
+      - "1984:1984"       # go2rtc HTTP API (WebRTC signaling)
+      - "8555:8555/tcp"   # go2rtc WebRTC media (TCP fallback)
+      - "8555:8555/udp"   # go2rtc WebRTC media (preferred)
     volumes:
       - ./config:/app/config
       - ./data:/app/data
@@ -12,4 +14,7 @@ services:
     environment:
       - TZ=Asia/Dubai
       - NODE_ENV=production
+      # Set this to your Unraid host's LAN IP (e.g. 192.168.1.10)
+      # so WebRTC ICE candidates are reachable from the kiosk device.
+      - WEBRTC_IP=${WEBRTC_IP:-}
     restart: unless-stopped

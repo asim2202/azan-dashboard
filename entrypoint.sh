@@ -18,11 +18,18 @@ GO2RTC_URL=$(echo "$GO2RTC_URL" | sed 's/[?&]enableSrtp//g')
 echo "[entrypoint] Camera URL: $CAMERA_URL"
 echo "[entrypoint] go2rtc URL: $GO2RTC_URL"
 
-# Detect the container's LAN-facing IP for WebRTC ICE candidates.
-# On macvlan/custom Docker networks, this is the IP browsers can reach.
+# Pick the ICE candidate IP for WebRTC.
+# Priority: WEBRTC_IP env var (host LAN IP, set this on bridge networks)
+# Fallback: container's own IP (works on macvlan / host networking).
 CONTAINER_IP=$(ip -4 -o addr show scope global 2>/dev/null \
   | awk '{print $4}' | cut -d/ -f1 | head -n1)
-echo "[entrypoint] Container IP: ${CONTAINER_IP:-unknown}"
+if [ -n "$WEBRTC_IP" ]; then
+  ICE_IP="$WEBRTC_IP"
+  echo "[entrypoint] WebRTC candidate IP: $ICE_IP (from WEBRTC_IP env)"
+else
+  ICE_IP="$CONTAINER_IP"
+  echo "[entrypoint] WebRTC candidate IP: $ICE_IP (container IP — set WEBRTC_IP to your host LAN IP if clients can't reach this)"
+fi
 
 # Write go2rtc config
 {
@@ -33,10 +40,10 @@ echo "[entrypoint] Container IP: ${CONTAINER_IP:-unknown}"
   echo "webrtc:"
   echo '  listen: ":8555"'
   echo "  candidates:"
-  if [ -n "$CONTAINER_IP" ]; then
-    echo "    - ${CONTAINER_IP}:8555"
+  if [ -n "$ICE_IP" ]; then
+    echo "    - ${ICE_IP}:8555"
   fi
-  # stun:8555 makes go2rtc auto-resolve its public/host candidate too
+  # stun:8555 lets go2rtc auto-resolve additional candidates if STUN is reachable
   echo "    - stun:8555"
   if [ -n "$GO2RTC_URL" ] && [ "$CAMERA_ENABLED" = "true" ]; then
     echo "streams:"

@@ -41,10 +41,11 @@ fi
   echo '  listen: ":8555"'
   echo "  candidates:"
   if [ -n "$ICE_IP" ]; then
+    # Explicit host candidate — direct UDP to this IP:port
     echo "    - ${ICE_IP}:8555"
+    # Same IP over TCP fallback (go2rtc listens on 8555/tcp too)
+    echo "    - ${ICE_IP}:8555/tcp"
   fi
-  # stun:8555 lets go2rtc auto-resolve additional candidates if STUN is reachable
-  echo "    - stun:8555"
   if [ -n "$GO2RTC_URL" ] && [ "$CAMERA_ENABLED" = "true" ]; then
     echo "streams:"
     echo "  frontdoor: $GO2RTC_URL"

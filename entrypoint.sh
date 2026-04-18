@@ -35,6 +35,8 @@ fi
 {
   echo "api:"
   echo '  listen: ":1984"'
+  # Allow cross-origin requests from the Next.js app on another port
+  echo '  origin: "*"'
   echo "rtsp:"
   echo '  listen: ":8554"'
   echo "webrtc:"

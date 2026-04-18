@@ -41,10 +41,9 @@ fi
   echo '  listen: ":8555"'
   echo "  candidates:"
   if [ -n "$ICE_IP" ]; then
-    # Explicit host candidate — direct UDP to this IP:port
+    # Single candidate — go2rtc automatically listens on both TCP and UDP
+    # and will emit candidates for both protocols from this one entry.
     echo "    - ${ICE_IP}:8555"
-    # Same IP over TCP fallback (go2rtc listens on 8555/tcp too)
-    echo "    - ${ICE_IP}:8555/tcp"
   fi
   if [ -n "$GO2RTC_URL" ] && [ "$CAMERA_ENABLED" = "true" ]; then
     echo "streams:"

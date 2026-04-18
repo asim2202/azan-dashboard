@@ -100,22 +100,26 @@ function CurrentWeatherRow({ weather }: { weather: NonNullable<WidgetProps["weat
 /* ── Hourly cards ── */
 function HourlyCards({ weather, count = 7, compact = false }: { weather: NonNullable<WidgetProps["weather"]>; count?: number; compact?: boolean }) {
   if (!weather.hourly?.length) return null;
-  const iconSize = compact ? "text-3xl" : "text-5xl";
-  const timeSize = compact ? "text-sm" : "text-base";
-  const tempSize = compact ? "text-base" : "text-lg";
-  const labelSize = compact ? "text-sm" : "text-base";
+  const iconSize = compact ? "text-2xl" : "text-5xl";
+  const timeSize = compact ? "text-xs" : "text-base";
+  const tempSize = compact ? "text-sm" : "text-lg";
+  const rainSize = compact ? "text-xs" : "text-base";
+  const labelSize = compact ? "text-xs" : "text-base";
+  const labelMargin = compact ? "mb-0.5" : "mb-1.5";
+  const cardGap = compact ? "gap-0.5" : "gap-1";
+  const cardPadY = compact ? "py-0.5" : "py-1";
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <p className={`${labelSize} uppercase tracking-wider font-semibold mb-1.5`} style={{ color: "var(--text-secondary)" }}>Hourly</p>
+      <p className={`${labelSize} uppercase tracking-wider font-semibold ${labelMargin}`} style={{ color: "var(--text-secondary)" }}>Hourly</p>
       <div className="flex-1 flex gap-1.5 min-h-0">
         {weather.hourly.slice(0, count).map((h, i) => (
-          <div key={i} className="flex-1 flex flex-col items-center justify-center gap-1 rounded-lg min-h-0 py-1"
+          <div key={i} className={`flex-1 flex flex-col items-center justify-center ${cardGap} rounded-lg min-h-0 ${cardPadY}`}
             style={{ background: "var(--card-bg-hover, var(--card-bg))" }}>
             <span className={`${timeSize} font-semibold`} style={{ color: "var(--text-secondary)" }}>{h.time}</span>
-            <span className={iconSize}><Icon name={h.icon} /></span>
-            <span className={`${tempSize} font-bold`} style={{ color: "var(--text-primary)" }}>{h.temperature}&deg;</span>
+            <span className={`${iconSize} leading-none`}><Icon name={h.icon} /></span>
+            <span className={`${tempSize} font-bold leading-none`} style={{ color: "var(--text-primary)" }}>{h.temperature}&deg;</span>
             {h.precipitationChance > 0 && (
-              <span className={`${labelSize} font-semibold`} style={{ color: "var(--status-amber)" }}>{h.precipitationChance}%</span>
+              <span className={`${rainSize} font-semibold leading-none`} style={{ color: "var(--status-amber)" }}>{h.precipitationChance}%</span>
             )}
           </div>
         ))}
@@ -127,27 +131,31 @@ function HourlyCards({ weather, count = 7, compact = false }: { weather: NonNull
 /* ── Daily: horizontal cards ── */
 function DailyCardsHorizontal({ weather, compact = false }: { weather: NonNullable<WidgetProps["weather"]>; compact?: boolean }) {
   if (!weather.daily?.length) return null;
-  const iconSize = compact ? "text-3xl" : "text-5xl";
-  const daySize = compact ? "text-sm" : "text-base";
-  const tempSize = compact ? "text-base" : "text-lg";
-  const lowSize = compact ? "text-sm" : "text-base";
-  const labelSize = compact ? "text-sm" : "text-base";
+  const iconSize = compact ? "text-2xl" : "text-5xl";
+  const daySize = compact ? "text-xs" : "text-base";
+  const tempSize = compact ? "text-sm" : "text-lg";
+  const lowSize = compact ? "text-xs" : "text-base";
+  const rainSize = compact ? "text-xs" : "text-base";
+  const labelSize = compact ? "text-xs" : "text-base";
+  const labelMargin = compact ? "mb-0.5" : "mb-1.5";
+  const cardGap = compact ? "gap-0.5" : "gap-1";
+  const cardPadY = compact ? "py-0.5" : "py-1";
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <p className={`${labelSize} uppercase tracking-wider font-semibold mb-1.5`} style={{ color: "var(--text-secondary)" }}>7-Day</p>
+      <p className={`${labelSize} uppercase tracking-wider font-semibold ${labelMargin}`} style={{ color: "var(--text-secondary)" }}>7-Day</p>
       <div className="flex-1 flex gap-1.5 min-h-0">
         {weather.daily.map((d, i) => (
-          <div key={i} className="flex-1 flex flex-col items-center justify-center gap-1 rounded-lg min-h-0 py-1"
+          <div key={i} className={`flex-1 flex flex-col items-center justify-center ${cardGap} rounded-lg min-h-0 ${cardPadY}`}
             style={{ background: "var(--card-bg-hover, var(--card-bg))" }}>
-            <span className={`${daySize} font-bold`} style={{ color: i === 0 ? "var(--accent-text)" : "var(--text-secondary)" }}>{d.day}</span>
-            <span className={iconSize}><Icon name={d.icon} /></span>
-            <div className="flex items-baseline gap-0.5">
+            <span className={`${daySize} font-bold leading-none`} style={{ color: i === 0 ? "var(--accent-text)" : "var(--text-secondary)" }}>{d.day}</span>
+            <span className={`${iconSize} leading-none`}><Icon name={d.icon} /></span>
+            <div className="flex items-baseline gap-0.5 leading-none">
               <span className={`${tempSize} font-bold`} style={{ color: "var(--text-primary)" }}>{d.high}&deg;</span>
               <span className={`${lowSize} font-medium`} style={{ color: "var(--text-muted)" }}>/</span>
               <span className={`${lowSize} font-medium`} style={{ color: "var(--text-secondary)" }}>{d.low}&deg;</span>
             </div>
             {d.precipitationChance > 0 && (
-              <span className={`${labelSize} font-semibold`} style={{ color: "var(--status-amber)" }}>{d.precipitationChance}%</span>
+              <span className={`${rainSize} font-semibold leading-none`} style={{ color: "var(--status-amber)" }}>{d.precipitationChance}%</span>
             )}
           </div>
         ))}
@@ -188,9 +196,9 @@ export default function WeatherWidgetComponent({ size, weather }: WidgetProps) {
   // H = horizontal (landscape): current left full-height, hourly + daily stacked right
   if (size === "H") {
     return (
-      <div className="h-full flex gap-4 select-none overflow-hidden">
+      <div className="h-full flex gap-3 select-none overflow-hidden">
         {/* Left: current conditions panel */}
-        <div className="shrink-0" style={{ width: "160px" }}>
+        <div className="shrink-0" style={{ width: "150px" }}>
           <CurrentWeatherPanel weather={weather} compact />
         </div>
 
@@ -198,7 +206,7 @@ export default function WeatherWidgetComponent({ size, weather }: WidgetProps) {
         <div className="w-px self-stretch opacity-20" style={{ background: "var(--text-faint)" }} />
 
         {/* Right: hourly + daily stacked */}
-        <div className="flex-1 flex flex-col gap-2 min-h-0 min-w-0">
+        <div className="flex-1 flex flex-col gap-1.5 min-h-0 min-w-0">
           <HourlyCards weather={weather} count={8} compact />
           <DailyCardsHorizontal weather={weather} compact />
         </div>

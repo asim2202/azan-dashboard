@@ -18,24 +18,35 @@ GO2RTC_URL=$(echo "$GO2RTC_URL" | sed 's/[?&]enableSrtp//g')
 echo "[entrypoint] Camera URL: $CAMERA_URL"
 echo "[entrypoint] go2rtc URL: $GO2RTC_URL"
 
+# Detect the container's LAN-facing IP for WebRTC ICE candidates.
+# On macvlan/custom Docker networks, this is the IP browsers can reach.
+CONTAINER_IP=$(ip -4 -o addr show scope global 2>/dev/null \
+  | awk '{print $4}' | cut -d/ -f1 | head -n1)
+echo "[entrypoint] Container IP: ${CONTAINER_IP:-unknown}"
+
 # Write go2rtc config
-if [ -n "$GO2RTC_URL" ] && [ "$CAMERA_ENABLED" = "true" ]; then
-  echo "api:" > /tmp/go2rtc.yaml
-  echo '  listen: ":1984"' >> /tmp/go2rtc.yaml
-  echo "rtsp:" >> /tmp/go2rtc.yaml
-  echo '  listen: ":8554"' >> /tmp/go2rtc.yaml
-  echo "streams:" >> /tmp/go2rtc.yaml
-  echo "  frontdoor: $GO2RTC_URL" >> /tmp/go2rtc.yaml
-  echo "[entrypoint] go2rtc config written"
-  cat /tmp/go2rtc.yaml
-else
-  echo "api:" > /tmp/go2rtc.yaml
-  echo '  listen: ":1984"' >> /tmp/go2rtc.yaml
-  echo "rtsp:" >> /tmp/go2rtc.yaml
-  echo '  listen: ":8554"' >> /tmp/go2rtc.yaml
-  echo "streams: {}" >> /tmp/go2rtc.yaml
-  echo "[entrypoint] No camera configured"
-fi
+{
+  echo "api:"
+  echo '  listen: ":1984"'
+  echo "rtsp:"
+  echo '  listen: ":8554"'
+  echo "webrtc:"
+  echo '  listen: ":8555"'
+  echo "  candidates:"
+  if [ -n "$CONTAINER_IP" ]; then
+    echo "    - ${CONTAINER_IP}:8555"
+  fi
+  # stun:8555 makes go2rtc auto-resolve its public/host candidate too
+  echo "    - stun:8555"
+  if [ -n "$GO2RTC_URL" ] && [ "$CAMERA_ENABLED" = "true" ]; then
+    echo "streams:"
+    echo "  frontdoor: $GO2RTC_URL"
+  else
+    echo "streams: {}"
+  fi
+} > /tmp/go2rtc.yaml
+echo "[entrypoint] go2rtc config:"
+cat /tmp/go2rtc.yaml
 
 # Start go2rtc
 go2rtc -config /tmp/go2rtc.yaml &

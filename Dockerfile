@@ -23,7 +23,7 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
 # Install go2rtc + ffmpeg + jq
-RUN apk add --no-cache curl ffmpeg jq && \
+RUN apk add --no-cache curl ffmpeg jq iproute2 && \
     ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then GO2RTC_ARCH="amd64"; \
     elif [ "$ARCH" = "aarch64" ]; then GO2RTC_ARCH="arm64"; \
@@ -45,6 +45,6 @@ COPY --from=builder /app/config ./config
 COPY entrypoint.sh /app/entrypoint.sh
 RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
-EXPOSE 3000 1984
+EXPOSE 3000 1984 8555/tcp 8555/udp
 
 CMD ["/app/entrypoint.sh"]

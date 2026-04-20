@@ -40,6 +40,17 @@ export interface DisplayConfig {
   theme: "auto" | "dark" | "light";
 }
 
+export interface AnimationsConfig {
+  enabled: boolean;          // master switch — disables everything below if false
+  stars: boolean;            // twinkling stars at night
+  weatherEffects: boolean;   // rain/snow overlay
+  gradientDrift: boolean;    // slow background gradient movement
+  cardEntrance: boolean;     // fade/slide-in on load
+  cardShimmer: boolean;      // diagonal shimmer sweep on cards
+  prayerGlow: boolean;       // pulsing glow on the next prayer row
+  weatherIcons: boolean;     // spin/float/bounce/pulse on weather icons
+}
+
 export interface CameraConfig {
   enabled: boolean;
   url: string;
@@ -69,6 +80,7 @@ export interface AppConfig {
   iqamaOffsets: IqamaOffsets;
   audio: AudioConfig;
   display: DisplayConfig;
+  animations: AnimationsConfig;
   camera: CameraConfig;
   layout: LayoutConfig;
   dataSources: {

@@ -38,6 +38,16 @@ const DEFAULT_CONFIG: AppConfig = {
     showSeconds: true,
     theme: "auto",
   },
+  animations: {
+    enabled: true,
+    stars: true,
+    weatherEffects: true,
+    gradientDrift: true,
+    cardEntrance: true,
+    cardShimmer: true,
+    prayerGlow: true,
+    weatherIcons: true,
+  },
   camera: {
     enabled: false,
     url: "",

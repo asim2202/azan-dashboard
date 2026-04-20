@@ -178,6 +178,26 @@ body {
 .icon-pulse  { animation: iconPulse 3s ease-in-out infinite; }
 .icon-flash  { animation: iconFlash 6s ease-in-out infinite; }
 
+/* ── Global animation disable toggles (applied on the root container) ── */
+.no-anim-entrance .card-animate {
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+.no-anim-shimmer .card-shimmer::after {
+  display: none;
+}
+.no-anim-glow .prayer-glow {
+  animation: none;
+}
+.no-anim-weather-icons .icon-spin,
+.no-anim-weather-icons .icon-float,
+.no-anim-weather-icons .icon-bounce,
+.no-anim-weather-icons .icon-pulse,
+.no-anim-weather-icons .icon-flash {
+  animation: none;
+}
+
 /* ── Rain / snow overlay ── */
 @keyframes rainDrop {
   0%   { transform: translateY(-5vh); opacity: 0; }

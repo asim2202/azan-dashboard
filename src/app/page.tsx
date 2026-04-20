@@ -36,6 +36,10 @@ const DEFAULT_CONFIG: AppConfig = {
     preIqamaAlert: { enabled: false, sound: "", offsets: { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 } },
   },
   display: { timeFormat: "12h", showSeconds: true, theme: "auto" },
+  animations: {
+    enabled: true, stars: true, weatherEffects: true, gradientDrift: true,
+    cardEntrance: true, cardShimmer: true, prayerGlow: true, weatherIcons: true,
+  },
   camera: { enabled: false, url: "", type: "image", refreshInterval: 0 },
   layout: { widgets: DEFAULT_GRID_WIDGETS },
   dataSources: { iacadEnabled: true, weatherEnabled: true },
@@ -143,19 +147,37 @@ export default function Home() {
   const wp: WidgetProps = { size: orientation, currentTime, timezone, config, prayerData, nextPrayer, weather };
   const cameraOn = config.camera?.enabled && config.camera?.url;
 
+  // Animation flags — master switch trumps individual toggles
+  const a = config.animations;
+  const animMaster = a?.enabled !== false;
+  const animStars = animMaster && a?.stars !== false;
+  const animWeatherFx = animMaster && a?.weatherEffects !== false;
+  const animGradient = animMaster && a?.gradientDrift !== false;
+  const animEntrance = animMaster && a?.cardEntrance !== false;
+  const animShimmer = animMaster && a?.cardShimmer !== false;
+  const animPrayerGlow = animMaster && a?.prayerGlow !== false;
+  const animWeatherIcons = animMaster && a?.weatherIcons !== false;
+  // CSS classes that disable animations globally (applied on root container)
+  const animOffClasses = [
+    !animEntrance && "no-anim-entrance",
+    !animShimmer && "no-anim-shimmer",
+    !animPrayerGlow && "no-anim-glow",
+    !animWeatherIcons && "no-anim-weather-icons",
+  ].filter(Boolean).join(" ");
+
   return (
     <div
-      className={`${themeClass} transition-all duration-[3000ms] relative`}
+      className={`${themeClass} ${animOffClasses} transition-all duration-[3000ms] relative`}
       style={{
         width: "100vw", height: "100vh", overflow: "hidden",
         background: weatherGradient,
-        backgroundSize: "100% 200%",
-        animation: "gradientDrift 30s ease-in-out infinite",
+        backgroundSize: animGradient ? "100% 200%" : "100% 100%",
+        animation: animGradient ? "gradientDrift 30s ease-in-out infinite" : "none",
       }}
     >
       {/* Atmospheric overlays */}
-      <StarsOverlay isNight={isNight} />
-      <WeatherEffectsOverlay weatherCode={weather?.weatherCode} />
+      {animStars && <StarsOverlay isNight={isNight} />}
+      {animWeatherFx && <WeatherEffectsOverlay weatherCode={weather?.weatherCode} />}
 
       {/* Overlays render at viewport level (outside scale) */}
       {config.audio.enabled && !audioUnlocked && <AudioUnlockButton onUnlock={() => setAudioUnlocked(true)} />}

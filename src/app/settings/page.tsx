@@ -429,6 +429,67 @@ export default function SettingsPage() {
           </div>
         </Section>
 
+        {/* Animations */}
+        <Section title="Animations & Performance">
+          <p className="text-xs text-white/40 mb-3">
+            Disable animations on lower-powered devices (Raspberry Pi 3, older TVs) to improve smoothness.
+          </p>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <span className="text-sm text-white/80 font-medium">Enable animations</span>
+              <p className="text-xs text-white/30">Master switch — turn off for maximum performance</p>
+            </div>
+            <Toggle
+              checked={config.animations?.enabled !== false}
+              onChange={(v) => updateConfig("animations.enabled", v)}
+            />
+          </div>
+          <div className={`space-y-2 pl-1 ${config.animations?.enabled === false ? "opacity-40 pointer-events-none" : ""}`}>
+            {[
+              { key: "stars", label: "Twinkling stars", desc: "100 stars fade in/out at night" },
+              { key: "weatherEffects", label: "Rain / snow overlay", desc: "Particle effect when it's raining/snowing" },
+              { key: "gradientDrift", label: "Gradient drift", desc: "Slow movement on the background gradient" },
+              { key: "cardEntrance", label: "Card entrance", desc: "Fade + slide-up on load" },
+              { key: "cardShimmer", label: "Card shimmer", desc: "Diagonal light sweep across cards" },
+              { key: "prayerGlow", label: "Next-prayer glow", desc: "Pulsing amber glow around the next prayer row" },
+              { key: "weatherIcons", label: "Weather icons", desc: "Spin/float/bounce on weather icons" },
+            ].map((a) => (
+              <div key={a.key} className="flex items-center justify-between gap-3 py-1.5 px-2 rounded-lg bg-white/[0.02]">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-white/80 truncate">{a.label}</p>
+                  <p className="text-xs text-white/30 truncate">{a.desc}</p>
+                </div>
+                <Toggle
+                  checked={(config.animations as unknown as Record<string, boolean> | undefined)?.[a.key] !== false}
+                  onChange={(v) => updateConfig(`animations.${a.key}`, v)}
+                />
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => {
+              updateConfig("animations", {
+                enabled: false, stars: false, weatherEffects: false, gradientDrift: false,
+                cardEntrance: false, cardShimmer: false, prayerGlow: false, weatherIcons: false,
+              });
+            }}
+            className="mt-3 text-xs text-white/40 hover:text-white/70 underline mr-4"
+          >
+            Disable all (performance mode)
+          </button>
+          <button
+            onClick={() => {
+              updateConfig("animations", {
+                enabled: true, stars: true, weatherEffects: true, gradientDrift: true,
+                cardEntrance: true, cardShimmer: true, prayerGlow: true, weatherIcons: true,
+              });
+            }}
+            className="mt-3 text-xs text-white/40 hover:text-white/70 underline"
+          >
+            Enable all
+          </button>
+        </Section>
+
         {/* Camera */}
         <Section title="Camera Feed">
           <div className="flex items-center justify-between mb-4">

@@ -2,7 +2,7 @@
 // Uses Al-Quran Cloud API: https://alquran.cloud/api
 
 let cachedVerse: { arabic: string; translation: string; reference: string; timestamp: number } | null = null;
-const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour — matches client-side refresh so a new ayah appears each hour
 
 // Popular surahs with impactful short verses
 const VERSE_SELECTIONS = [

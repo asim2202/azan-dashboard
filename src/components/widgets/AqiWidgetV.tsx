@@ -24,24 +24,24 @@ export default function AqiWidgetV({ weather }: WidgetProps) {
 
   return (
     <div className="h-full flex flex-col select-none px-4">
-      <p className="text-lg uppercase tracking-wider font-semibold pt-1 text-center" style={{ color: "var(--text-secondary)" }}>Air Quality</p>
-      <div className="flex-1 flex items-center justify-center gap-4">
-        <div className="flex items-center gap-3">
-          <span className="text-3xl">{getAqiEmoji(aqi)}</span>
+      <p className="text-base uppercase tracking-wider font-semibold pt-1 text-center" style={{ color: "var(--text-secondary)" }}>Air Quality</p>
+      <div className="flex-1 flex items-center justify-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <span className="text-2xl">{getAqiEmoji(aqi)}</span>
           <div className="flex flex-col">
-            <span className="text-6xl font-light leading-none" style={{ color, fontVariantNumeric: "tabular-nums" }}>{aqi}</span>
-            <span className="text-lg font-semibold" style={{ color }}>{label}</span>
+            <span className="text-5xl font-light leading-none" style={{ color, fontVariantNumeric: "tabular-nums" }}>{aqi}</span>
+            <span className="text-base font-semibold" style={{ color }}>{label}</span>
           </div>
         </div>
-        <div className="w-px self-stretch opacity-20 mx-3 my-3" style={{ background: "var(--text-faint)" }} />
-        <div className="flex flex-col gap-2">
+        <div className="w-px self-stretch opacity-20 mx-2 my-2" style={{ background: "var(--text-faint)" }} />
+        <div className="flex flex-col gap-1.5">
           <div className="flex items-baseline gap-2">
-            <span className="text-base font-medium" style={{ color: "var(--text-muted)" }}>PM2.5</span>
-            <span className="text-3xl font-semibold leading-none" style={{ color: "var(--text-primary)" }}>{pm25}</span>
+            <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>PM2.5</span>
+            <span className="text-2xl font-semibold leading-none" style={{ color: "var(--text-primary)" }}>{pm25}</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-base font-medium" style={{ color: "var(--text-muted)" }}>PM10</span>
-            <span className="text-3xl font-semibold leading-none" style={{ color: "var(--text-primary)" }}>{pm10}</span>
+            <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>PM10</span>
+            <span className="text-2xl font-semibold leading-none" style={{ color: "var(--text-primary)" }}>{pm10}</span>
           </div>
         </div>
       </div>

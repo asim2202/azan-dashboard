@@ -2,7 +2,7 @@
 // Returns a random hadith from Sahih Bukhari or Sahih Muslim
 
 let cached: { arabic: string; english: string; reference: string; narrator: string; timestamp: number } | null = null;
-const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour — matches client-side refresh so a new hadith appears each hour
 
 // Use specific well-known hadiths from Bukhari/Muslim for reliability
 const COLLECTIONS = [

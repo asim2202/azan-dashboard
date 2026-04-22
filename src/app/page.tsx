@@ -208,7 +208,7 @@ export default function Home() {
       className={`${themeClass} ${animOffClasses} transition-all duration-[3000ms] relative`}
       style={{
         width: "100vw", height: "100vh", overflow: "hidden",
-        background: weatherGradient,
+        backgroundImage: weatherGradient,
         backgroundSize: animGradient ? "100% 200%" : "100% 100%",
         animation: animGradient ? "gradientDrift 30s ease-in-out infinite" : "none",
       }}
@@ -351,7 +351,7 @@ export default function Home() {
               </Card>
 
               {/* Row 5: News Ticker */}
-              <div className="flex-shrink-0" style={{ height: "72px" }}>
+              <div className="flex-shrink-0" style={{ height: "64px" }}>
                 <NewsTicker size="V" />
               </div>
             </div>

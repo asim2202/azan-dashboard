@@ -44,11 +44,11 @@ export default function NewsTickerV() {
         className="news-ticker-scroll flex items-center h-full whitespace-nowrap"
         style={{ color: "var(--text-secondary)" }}
       >
-        <span className="text-2xl font-semibold px-6 shrink-0" style={{ color: "var(--accent-text)" }}>
+        <span className="text-xl font-semibold px-5 shrink-0" style={{ color: "var(--accent-text)" }}>
           THE NATIONAL
         </span>
-        <span className="text-2xl">{tickerText}</span>
-        <span className="text-2xl">{separator}{tickerText}</span>
+        <span className="text-xl">{tickerText}</span>
+        <span className="text-xl">{separator}{tickerText}</span>
       </div>
     </div>
   );

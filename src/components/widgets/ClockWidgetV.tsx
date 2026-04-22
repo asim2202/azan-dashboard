@@ -10,23 +10,23 @@ interface Props {
 export default function ClockWidgetV({ mainTime, period, gregorian, hijri }: Props) {
   return (
     <div className="text-center select-none h-full flex flex-col justify-center">
-      <div className="flex items-baseline justify-center gap-3">
+      <div className="flex items-baseline justify-center gap-2">
         <span
-          className="text-[9rem] font-light tracking-tight leading-none"
+          className="text-8xl font-light tracking-tight"
           style={{ fontVariantNumeric: "tabular-nums", color: "var(--text-primary)" }}
         >
           {mainTime}
         </span>
         {period && (
-          <span className="text-4xl font-light" style={{ color: "var(--text-muted)" }}>
+          <span className="text-3xl font-light" style={{ color: "var(--text-muted)" }}>
             {period}
           </span>
         )}
       </div>
-      <p className="mt-3 text-2xl font-medium" style={{ color: "var(--text-secondary)" }}>
+      <p className="mt-1 text-lg font-medium" style={{ color: "var(--text-secondary)" }}>
         {gregorian}
       </p>
-      <p className="text-2xl font-medium" style={{ color: "var(--text-secondary)" }}>
+      <p className="text-lg font-medium" style={{ color: "var(--text-secondary)" }}>
         {hijri}
       </p>
     </div>

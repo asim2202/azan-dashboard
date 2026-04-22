@@ -26,27 +26,27 @@ export default function PrayerProgressWidgetV({ currentTime, prayerData }: Widge
   }
 
   return (
-    <div className="h-full flex flex-col justify-center px-3 select-none">
-      <div className="flex justify-between text-sm mb-2">
+    <div className="h-full flex flex-col justify-center px-2 select-none">
+      <div className="flex justify-between text-xs mb-2">
         <span style={{ color: "var(--text-muted)" }}>{currentP?.label || "..."}</span>
         <span className="font-medium" style={{ color: "var(--text-primary)" }}>
           {Math.round(progress * 100)}%
         </span>
         <span style={{ color: "var(--accent-text)" }}>{nextP?.label || "..."}</span>
       </div>
-      <div className="relative w-full h-4 rounded-full overflow-hidden" style={{ background: "var(--card-bg-hover, rgba(255,255,255,0.1))" }}>
+      <div className="relative w-full h-3 rounded-full overflow-hidden" style={{ background: "var(--card-bg-hover, rgba(255,255,255,0.1))" }}>
         <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${progress * 100}%`, background: "var(--accent)" }} />
       </div>
-      <div className="relative w-full mt-3 flex justify-between">
+      <div className="relative w-full mt-2 flex justify-between">
         {prayers.map((p, i) => {
           const isPast = now > p.azanDate.getTime();
           const isCurrent = i === currentPrayerIdx;
           return (
             <div key={p.name} className="text-center">
-              <div className="w-3 h-3 rounded-full mx-auto mb-1" style={{
+              <div className="w-2 h-2 rounded-full mx-auto mb-0.5" style={{
                 background: isCurrent ? "var(--accent)" : isPast ? "var(--text-faint)" : "var(--text-muted)",
               }} />
-              <span className="text-xs" style={{ color: isCurrent ? "var(--accent-text)" : "var(--text-faint)" }}>
+              <span className="text-[10px]" style={{ color: isCurrent ? "var(--accent-text)" : "var(--text-faint)" }}>
                 {p.label}
               </span>
             </div>

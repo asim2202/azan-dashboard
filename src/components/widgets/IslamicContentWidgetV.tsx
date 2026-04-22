@@ -17,15 +17,15 @@ export default function IslamicContentWidgetV({ hadith, verse, activeSlide, fadi
   const showAyah = activeSlide === "ayah" && verse;
 
   return (
-    <div className="h-full flex flex-col select-none overflow-hidden px-6">
-      <div className="flex items-center justify-center gap-5 pt-2 pb-4 flex-shrink-0">
-        <button onClick={() => onSetSlide("ayah")} className="flex items-center gap-2 transition-opacity" style={{ opacity: activeSlide === "ayah" ? 1 : 0.3 }}>
-          <span className="block w-2.5 h-2.5 rounded-full" style={{ background: "var(--accent)" }} />
-          <span className="text-base uppercase tracking-wider font-semibold" style={{ color: "var(--text-muted)" }}>Ayah</span>
+    <div className="h-full flex flex-col select-none overflow-hidden px-4">
+      <div className="flex items-center justify-center gap-3 pt-1 pb-4 flex-shrink-0">
+        <button onClick={() => onSetSlide("ayah")} className="flex items-center gap-1.5 transition-opacity" style={{ opacity: activeSlide === "ayah" ? 1 : 0.3 }}>
+          <span className="block w-2 h-2 rounded-full" style={{ background: "var(--accent)" }} />
+          <span className="text-sm uppercase tracking-wider font-medium" style={{ color: "var(--text-muted)" }}>Ayah</span>
         </button>
-        <button onClick={() => onSetSlide("hadith")} className="flex items-center gap-2 transition-opacity" style={{ opacity: activeSlide === "hadith" ? 1 : 0.3 }}>
-          <span className="block w-2.5 h-2.5 rounded-full" style={{ background: "var(--accent)" }} />
-          <span className="text-base uppercase tracking-wider font-semibold" style={{ color: "var(--text-muted)" }}>Hadith</span>
+        <button onClick={() => onSetSlide("hadith")} className="flex items-center gap-1.5 transition-opacity" style={{ opacity: activeSlide === "hadith" ? 1 : 0.3 }}>
+          <span className="block w-2 h-2 rounded-full" style={{ background: "var(--accent)" }} />
+          <span className="text-sm uppercase tracking-wider font-medium" style={{ color: "var(--text-muted)" }}>Hadith</span>
         </button>
       </div>
 
@@ -37,18 +37,18 @@ export default function IslamicContentWidgetV({ hadith, verse, activeSlide, fadi
         <div ref={innerRef} className={needsScroll ? "" : "w-full"}>
           {showAyah && verse && (
             <>
-              <p className="text-right text-5xl leading-relaxed mb-5 font-arabic" style={{ color: "var(--text-primary)", direction: "rtl" }}>{verse.arabic}</p>
-              <p className="text-2xl leading-relaxed italic mb-5" style={{ color: "var(--text-primary)" }}>&ldquo;{verse.translation}&rdquo;</p>
-              <p className="text-xl font-semibold text-right" style={{ color: "var(--accent-text)" }}>{verse.reference}</p>
+              <p className="text-right text-3xl leading-relaxed mb-4 font-arabic" style={{ color: "var(--text-primary)", direction: "rtl" }}>{verse.arabic}</p>
+              <p className="text-xl leading-relaxed italic mb-4" style={{ color: "var(--text-primary)" }}>&ldquo;{verse.translation}&rdquo;</p>
+              <p className="text-lg font-semibold text-right" style={{ color: "var(--accent-text)" }}>{verse.reference}</p>
             </>
           )}
           {showHadith && hadith && (
             <>
               {hadith.arabic && (
-                <p className="text-right text-5xl leading-relaxed mb-5 font-arabic" style={{ color: "var(--text-primary)", direction: "rtl" }}>{hadith.arabic}</p>
+                <p className="text-right text-3xl leading-relaxed mb-4 font-arabic" style={{ color: "var(--text-primary)", direction: "rtl" }}>{hadith.arabic}</p>
               )}
-              <p className="text-2xl leading-relaxed italic mb-5" style={{ color: "var(--text-primary)" }}>&ldquo;{hadith.english}&rdquo;</p>
-              <p className="text-xl font-semibold text-right" style={{ color: "var(--accent-text)" }}>{hadith.narrator} &middot; {hadith.reference}</p>
+              <p className="text-xl leading-relaxed italic mb-4" style={{ color: "var(--text-primary)" }}>&ldquo;{hadith.english}&rdquo;</p>
+              <p className="text-lg font-semibold text-right" style={{ color: "var(--accent-text)" }}>{hadith.narrator} &middot; {hadith.reference}</p>
             </>
           )}
         </div>

@@ -25,6 +25,7 @@ import AqiWidget from "@/components/widgets/AqiWidget";
 import NewsTicker from "@/components/NewsTicker";
 import StarsOverlay from "@/components/StarsOverlay";
 import WeatherEffectsOverlay from "@/components/WeatherEffectsOverlay";
+import CelestialOverlay from "@/components/CelestialOverlay";
 
 const DEFAULT_CONFIG: AppConfig = {
   location: { latitude: 25.2048, longitude: 55.2708, city: "Dubai", timezone: "Asia/Dubai" },
@@ -39,6 +40,7 @@ const DEFAULT_CONFIG: AppConfig = {
   animations: {
     enabled: true, stars: true, weatherEffects: true, gradientDrift: true,
     cardEntrance: true, cardShimmer: true, prayerGlow: true, weatherIcons: true,
+    celestial: true, clouds: true, lightning: true,
   },
   camera: { enabled: false, url: "", type: "image", refreshInterval: 0 },
   layout: { widgets: DEFAULT_GRID_WIDGETS },
@@ -76,6 +78,24 @@ export default function Home() {
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [viewport, setViewport] = useState<{ w: number; h: number } | null>(null);
   const [orientationOverride, setOrientationOverride] = useState<"auto" | "landscape" | "portrait">("auto");
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Track fullscreen (API-based OR Chrome F11 — detected by comparing innerHeight to screen.height)
+  useEffect(() => {
+    const check = () => {
+      const apiFs = !!document.fullscreenElement;
+      // Chrome F11 doesn't fire fullscreenchange; detect by comparing window to screen dimensions
+      const f11Fs = window.innerHeight >= window.screen.height - 2 && window.innerWidth >= window.screen.width - 2;
+      setIsFullscreen(apiFs || f11Fs);
+    };
+    check();
+    document.addEventListener("fullscreenchange", check);
+    window.addEventListener("resize", check);
+    return () => {
+      document.removeEventListener("fullscreenchange", check);
+      window.removeEventListener("resize", check);
+    };
+  }, []);
 
   const timezone = config.location.timezone;
   const { time: currentTime, mounted } = useCurrentTime();
@@ -84,15 +104,30 @@ export default function Home() {
 
   const nextPrayer = useMemo(() => mounted ? getNextPrayer(currentTime) : null, [getNextPrayer, currentTime, mounted]);
   const themeClass = "theme-dark"; // Always dark text for weather gradient backgrounds
-  const currentHour = useMemo(() =>
-    parseInt(currentTime.toLocaleTimeString("en-GB", { hour: "numeric", hour12: false, timeZone: config.location.timezone })),
-    [currentTime, config.location.timezone]
+  // Use real sunrise + maghrib times from prayer data for day/night phase detection
+  const sunriseDate = useMemo(
+    () => prayerData?.prayers.find((p) => p.name === "sunrise")?.azanDate ?? null,
+    [prayerData]
+  );
+  const maghribDate = useMemo(
+    () => prayerData?.prayers.find((p) => p.name === "maghrib")?.azanDate ?? null,
+    [prayerData]
   );
   const weatherGradient = useMemo(() =>
-    getWeatherGradient(weather?.weatherCode, currentHour),
-    [weather?.weatherCode, currentHour]
+    getWeatherGradient(weather?.weatherCode, currentTime, sunriseDate, maghribDate),
+    [weather?.weatherCode, currentTime, sunriseDate, maghribDate]
   );
-  const isNight = currentHour < 5 || currentHour >= 20;
+  const isNight = useMemo(() => {
+    if (sunriseDate && maghribDate) {
+      const t = currentTime.getTime();
+      const nightStart = maghribDate.getTime() + 15 * 60000;
+      const dawnStart = sunriseDate.getTime() - 30 * 60000;
+      return t >= nightStart || t < dawnStart;
+    }
+    // Fallback
+    const h = currentTime.getHours();
+    return h < 5 || h >= 20;
+  }, [currentTime, sunriseDate, maghribDate]);
 
   const azan = useAzan(
     prayerData?.prayers, currentTime, config.audio.enabled, audioUnlocked,
@@ -157,6 +192,9 @@ export default function Home() {
   const animShimmer = animMaster && a?.cardShimmer !== false;
   const animPrayerGlow = animMaster && a?.prayerGlow !== false;
   const animWeatherIcons = animMaster && a?.weatherIcons !== false;
+  const animCelestial = animMaster && a?.celestial !== false;
+  const animClouds = animMaster && a?.clouds !== false;
+  const animLightning = animMaster && a?.lightning !== false;
   // CSS classes that disable animations globally (applied on root container)
   const animOffClasses = [
     !animEntrance && "no-anim-entrance",
@@ -178,6 +216,15 @@ export default function Home() {
       {/* Atmospheric overlays */}
       {animStars && <StarsOverlay isNight={isNight} />}
       {animWeatherFx && <WeatherEffectsOverlay weatherCode={weather?.weatherCode} />}
+      <CelestialOverlay
+        currentTime={currentTime}
+        sunrise={sunriseDate}
+        maghrib={maghribDate}
+        weatherCode={weather?.weatherCode}
+        celestial={animCelestial}
+        clouds={animClouds}
+        lightning={animLightning}
+      />
 
       {/* Overlays render at viewport level (outside scale) */}
       {config.audio.enabled && !audioUnlocked && <AudioUnlockButton onUnlock={() => setAudioUnlocked(true)} />}
@@ -304,29 +351,31 @@ export default function Home() {
               </Card>
 
               {/* Row 5: News Ticker */}
-              <div className="flex-shrink-0" style={{ height: "52px" }}>
-                <NewsTicker />
+              <div className="flex-shrink-0" style={{ height: "72px" }}>
+                <NewsTicker size="V" />
               </div>
             </div>
           )}
 
-          <StatusBar
-            source={prayerData?.source || null}
-            lastUpdated={prayerData?.lastUpdated || null}
-            audioReady={audioUnlocked}
-            audioEnabled={config.audio.enabled}
-            orientation={orientationOverride}
-            onOrientationChange={() => setOrientationOverride((prev) => prev === "auto" ? "landscape" : prev === "landscape" ? "portrait" : "auto")}
-            onTestAzan={() => {
-              const src = config.audio.defaultAzan;
-              if (src && azan.audioRef.current) {
-                const audio = azan.audioRef.current;
-                audio.src = src;
-                audio.volume = config.audio.volume;
-                audio.play().catch((err) => console.error("[Test Azan] Failed:", err));
-              }
-            }}
-          />
+          {!isFullscreen && (
+            <StatusBar
+              source={prayerData?.source || null}
+              lastUpdated={prayerData?.lastUpdated || null}
+              audioReady={audioUnlocked}
+              audioEnabled={config.audio.enabled}
+              orientation={orientationOverride}
+              onOrientationChange={() => setOrientationOverride((prev) => prev === "auto" ? "landscape" : prev === "landscape" ? "portrait" : "auto")}
+              onTestAzan={() => {
+                const src = config.audio.defaultAzan;
+                if (src && azan.audioRef.current) {
+                  const audio = azan.audioRef.current;
+                  audio.src = src;
+                  audio.volume = config.audio.volume;
+                  audio.play().catch((err) => console.error("[Test Azan] Failed:", err));
+                }
+              }}
+            />
+          )}
         </main>
       </div>
     </div>

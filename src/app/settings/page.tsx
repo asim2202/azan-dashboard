@@ -446,7 +446,10 @@ export default function SettingsPage() {
           </div>
           <div className={`space-y-2 pl-1 ${config.animations?.enabled === false ? "opacity-40 pointer-events-none" : ""}`}>
             {[
-              { key: "stars", label: "Twinkling stars", desc: "100 stars fade in/out at night" },
+              { key: "stars", label: "Twinkling stars", desc: "Stars fade in/out across the night sky" },
+              { key: "celestial", label: "Sun & moon", desc: "Animated sun in the day, moon with phase at night" },
+              { key: "clouds", label: "Drifting clouds", desc: "Clouds drift across the sky when overcast" },
+              { key: "lightning", label: "Lightning flashes", desc: "Brief sky flashes during thunderstorms" },
               { key: "weatherEffects", label: "Rain / snow overlay", desc: "Particle effect when it's raining/snowing" },
               { key: "gradientDrift", label: "Gradient drift", desc: "Slow movement on the background gradient" },
               { key: "cardEntrance", label: "Card entrance", desc: "Fade + slide-up on load" },
@@ -471,6 +474,7 @@ export default function SettingsPage() {
               updateConfig("animations", {
                 enabled: false, stars: false, weatherEffects: false, gradientDrift: false,
                 cardEntrance: false, cardShimmer: false, prayerGlow: false, weatherIcons: false,
+                celestial: false, clouds: false, lightning: false,
               });
             }}
             className="mt-3 text-xs text-white/40 hover:text-white/70 underline mr-4"
@@ -482,6 +486,7 @@ export default function SettingsPage() {
               updateConfig("animations", {
                 enabled: true, stars: true, weatherEffects: true, gradientDrift: true,
                 cardEntrance: true, cardShimmer: true, prayerGlow: true, weatherIcons: true,
+                celestial: true, clouds: true, lightning: true,
               });
             }}
             className="mt-3 text-xs text-white/40 hover:text-white/70 underline"

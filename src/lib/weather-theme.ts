@@ -4,12 +4,40 @@
  * All gradients are medium-to-dark to ensure white text remains readable.
  */
 
-type TimePhase = "night" | "dawn" | "day" | "dusk";
+export type TimePhase = "night" | "dawn" | "day" | "dusk";
 
-function getTimePhase(hour: number): TimePhase {
+/**
+ * Resolve the current phase of day from the actual sun events when we know them.
+ * Dawn = from ~30 min before sunrise to ~20 min after.
+ * Day  = from sunrise+20min to maghrib-20min.
+ * Dusk = from maghrib-20min to maghrib+15min (short window around actual sunset).
+ * Night = everything else.
+ *
+ * Falls back to crude hour-based ranges when sun times aren't available yet.
+ */
+export function getTimePhase(
+  now: Date,
+  sunrise?: Date | null,
+  maghrib?: Date | null
+): TimePhase {
+  if (sunrise && maghrib) {
+    const t = now.getTime();
+    const sr = sunrise.getTime();
+    const mg = maghrib.getTime();
+    const dawnStart = sr - 30 * 60000;
+    const dayStart = sr + 20 * 60000;
+    const duskStart = mg - 20 * 60000;
+    const nightStart = mg + 15 * 60000;
+    if (t >= dawnStart && t < dayStart) return "dawn";
+    if (t >= dayStart && t < duskStart) return "day";
+    if (t >= duskStart && t < nightStart) return "dusk";
+    return "night";
+  }
+  // Fallback: hour-only (used briefly before prayer data loads)
+  const hour = now.getHours();
   if (hour >= 5 && hour < 7) return "dawn";
   if (hour >= 7 && hour < 17) return "day";
-  if (hour >= 17 && hour < 20) return "dusk";
+  if (hour >= 17 && hour < 19) return "dusk";
   return "night";
 }
 
@@ -79,9 +107,14 @@ const GRADIENTS: Record<WeatherCategory, Record<TimePhase, [string, string, stri
   },
 };
 
-export function getWeatherGradient(weatherCode: number | undefined, hour: number): string {
+export function getWeatherGradient(
+  weatherCode: number | undefined,
+  now: Date,
+  sunrise?: Date | null,
+  maghrib?: Date | null
+): string {
   const category = weatherCode !== undefined ? getWeatherCategory(weatherCode) : "clear";
-  const phase = getTimePhase(hour);
+  const phase = getTimePhase(now, sunrise, maghrib);
   const [top, mid, bottom] = GRADIENTS[category][phase];
   return `linear-gradient(to bottom, ${top}, ${mid}, ${bottom})`;
 }

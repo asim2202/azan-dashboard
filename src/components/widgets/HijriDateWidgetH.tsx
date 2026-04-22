@@ -1,0 +1,15 @@
+"use client";
+
+import type { WidgetProps } from "@/types/widget";
+import { getHijriDate } from "@/lib/hijri";
+
+export default function HijriDateWidgetH({ currentTime, timezone }: WidgetProps) {
+  const hijri = getHijriDate(currentTime, timezone);
+  return (
+    <div className="h-full flex flex-col items-center justify-center select-none">
+      <p className="text-2xl font-light" style={{ color: "var(--text-primary)" }}>{hijri.day}</p>
+      <p className="text-sm" style={{ color: "var(--accent-text)" }}>{hijri.monthName}</p>
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>{hijri.year} AH</p>
+    </div>
+  );
+}

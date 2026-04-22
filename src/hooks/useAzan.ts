@@ -49,9 +49,12 @@ export function useAzan(
     audioRef.current = audio;
 
     audio.addEventListener("ended", () => {
+      // When azan audio finishes, hide the overlay and clear playing state.
+      // User asked for the popup to dismiss automatically at end of azan.
       setState((prev) => ({
         ...prev,
         isPlaying: false,
+        showOverlay: false,
       }));
     });
 

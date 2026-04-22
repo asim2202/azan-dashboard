@@ -49,6 +49,9 @@ export interface AnimationsConfig {
   cardShimmer: boolean;      // diagonal shimmer sweep on cards
   prayerGlow: boolean;       // pulsing glow on the next prayer row
   weatherIcons: boolean;     // spin/float/bounce/pulse on weather icons
+  celestial: boolean;        // sun / moon in the sky
+  clouds: boolean;           // drifting clouds when overcast
+  lightning: boolean;        // lightning flashes when storm
 }
 
 export interface CameraConfig {

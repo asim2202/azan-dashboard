@@ -47,6 +47,9 @@ const DEFAULT_CONFIG: AppConfig = {
     cardShimmer: true,
     prayerGlow: true,
     weatherIcons: true,
+    celestial: true,
+    clouds: true,
+    lightning: true,
   },
   camera: {
     enabled: false,

@@ -513,7 +513,18 @@ export default function SettingsPage() {
               className="input-field"
             />
           </Field>
-          <Field label="Feed Type">
+          <Field label="Stream Mode (RTSP URLs only)">
+            <select
+              value={config.camera?.streamMode || "webrtc"}
+              onChange={(e) => updateConfig("camera.streamMode", e.target.value)}
+              className="input-field"
+            >
+              <option value="webrtc">WebRTC (lowest latency, ~0.3s)</option>
+              <option value="mse">MSE (very smooth, ~1s latency)</option>
+              <option value="mjpeg">MJPEG (no audio, highest bandwidth)</option>
+            </select>
+          </Field>
+          <Field label="Feed Type (non-RTSP URLs only)">
             <select
               value={config.camera?.type || "image"}
               onChange={(e) => updateConfig("camera.type", e.target.value)}
@@ -534,12 +545,11 @@ export default function SettingsPage() {
             />
           </Field>
           <div className="mt-3 p-3 rounded-lg bg-white/5 text-xs text-white/40">
-            <p className="font-medium text-white/60 mb-1">Supported URL formats:</p>
+            <p className="font-medium text-white/60 mb-1">How it works:</p>
             <ul className="space-y-1">
-              <li>RTSP: rtsp://user:pass@camera-ip:554/stream (converted automatically via built-in go2rtc)</li>
-              <li>MJPEG: http://server:8090/stream</li>
-              <li>Frigate: http://server:5000/api/camera/latest.jpg</li>
-              <li>Snapshot: http://camera-ip/snap.jpg (set refresh to 2-5s)</li>
+              <li>Paste your UniFi RTSPS URL and the dashboard auto-iframes go2rtc&apos;s player</li>
+              <li>Example: rtsps://192.168.1.1:7441/&lt;token&gt;?enableSrtp</li>
+              <li>Non-RTSP URLs (MJPEG, snapshots) use the Feed Type selector</li>
             </ul>
           </div>
         </Section>

@@ -1,163 +1,35 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import type { CameraConfig } from "@/types/config";
 
-/** WebRTC live video player — uses go2rtc's WHEP-style endpoint for sub-second latency */
-function LiveVideo({
-  host,
-  port,
-  streamName,
-  className,
-}: {
-  host: string;
-  port: number;
-  streamName: string;
-  className?: string;
-}) {
-  const ref = useRef<HTMLVideoElement>(null);
-  const pcRef = useRef<RTCPeerConnection | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
-
-    async function connect() {
-      const video = ref.current;
-      if (!video || cancelled) return;
-
-      // Close any previous connection
-      if (pcRef.current) {
-        pcRef.current.close();
-        pcRef.current = null;
-      }
-
-      const pc = new RTCPeerConnection({
-        iceServers: [],
-        bundlePolicy: "max-bundle",
-      });
-      pcRef.current = pc;
-
-      pc.addTransceiver("video", { direction: "recvonly" });
-      pc.addTransceiver("audio", { direction: "recvonly" });
-
-      pc.ontrack = (ev) => {
-        if (video.srcObject !== ev.streams[0]) {
-          video.srcObject = ev.streams[0];
-        }
-      };
-
-      pc.onconnectionstatechange = () => {
-        if (cancelled) return;
-        if (
-          pc.connectionState === "failed" ||
-          pc.connectionState === "disconnected"
-        ) {
-          // Auto-reconnect after short delay
-          retryTimer = setTimeout(() => {
-            if (!cancelled) connect();
-          }, 1500);
-        }
-      };
-
-      try {
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-
-        // Wait for ICE gathering to complete (simpler than trickle ICE)
-        await new Promise<void>((resolve) => {
-          if (pc.iceGatheringState === "complete") return resolve();
-          const check = () => {
-            if (pc.iceGatheringState === "complete") {
-              pc.removeEventListener("icegatheringstatechange", check);
-              resolve();
-            }
-          };
-          pc.addEventListener("icegatheringstatechange", check);
-          // Hard timeout after 2s
-          setTimeout(resolve, 2000);
-        });
-
-        if (cancelled) return;
-
-        const resp = await fetch(
-          `http://${host}:${port}/api/webrtc?src=${encodeURIComponent(streamName)}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/sdp" },
-            body: pc.localDescription?.sdp ?? "",
-          }
-        );
-
-        if (!resp.ok) throw new Error(`go2rtc webrtc ${resp.status}`);
-        const answerSdp = await resp.text();
-        if (cancelled) return;
-
-        await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
-      } catch (err) {
-        console.error("[Camera] WebRTC error:", err);
-        if (!cancelled) {
-          setFailed(true);
-          retryTimer = setTimeout(() => {
-            setFailed(false);
-            if (!cancelled) connect();
-          }, 3000);
-        }
-      }
-    }
-
-    connect();
-
-    return () => {
-      cancelled = true;
-      if (retryTimer) clearTimeout(retryTimer);
-      if (pcRef.current) {
-        pcRef.current.close();
-        pcRef.current = null;
-      }
-    };
-  }, [host, port, streamName]);
-
-  if (failed) {
-    return (
-      <div
-        className={className}
-        style={{ background: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}
-      >
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Reconnecting…</p>
-      </div>
-    );
-  }
-
-  return (
-    <video
-      ref={ref}
-      autoPlay
-      muted
-      playsInline
-      className={className}
-      style={{ background: "#000" }}
-    />
-  );
-}
+/**
+ * Simple camera feed renderer.
+ *
+ * For RTSP/RTSPS URLs: fetches /api/camera-stream to confirm go2rtc is up
+ * and to get the stream name, then renders an iframe pointing at go2rtc's
+ * built-in player at http://<host>:1984/stream.html?src=<name>&mode=<mode>.
+ *
+ * go2rtc handles ALL the WebRTC/MSE negotiation internally — we just embed
+ * its player. Much more reliable than rolling our own PeerConnection.
+ *
+ * For non-RTSP URLs: uses the user's chosen type (image/iframe) directly.
+ */
 
 interface CameraFeedProps {
   config: CameraConfig;
 }
 
-type WebRtcSource = {
-  kind: "webrtc";
-  host: string;
-  port: number;
-  streamName: string;
+type Go2rtcSource = {
+  kind: "go2rtc";
+  playerUrl: string;
 };
 type UrlSource = {
   kind: "url";
   url: string;
-  feedType: "image" | "iframe" | "video";
+  feedType: "image" | "iframe";
 };
-type Source = WebRtcSource | UrlSource;
+type Source = Go2rtcSource | UrlSource;
 
 export default function CameraFeed({ config }: CameraFeedProps) {
   const [source, setSource] = useState<Source | null>(null);
@@ -170,18 +42,21 @@ export default function CameraFeed({ config }: CameraFeedProps) {
       return;
     }
 
-    if (config.url.startsWith("rtsp://") || config.url.startsWith("rtsps://")) {
+    const isRtsp =
+      config.url.startsWith("rtsp://") || config.url.startsWith("rtsps://");
+
+    if (isRtsp) {
       fetch("/api/camera-stream")
         .then((r) => r.json())
         .then((data) => {
           if (data.source === "go2rtc" && data.streamName) {
-            // WebRTC — sub-second latency, no drift
-            setSource({
-              kind: "webrtc",
-              host: window.location.hostname,
-              port: data.go2rtcPort || 1984,
-              streamName: data.streamName,
-            });
+            const host = window.location.hostname;
+            const port = data.go2rtcPort || 1984;
+            const mode = config.streamMode || "webrtc";
+            const playerUrl = `http://${host}:${port}/stream.html?src=${encodeURIComponent(
+              data.streamName
+            )}&mode=${encodeURIComponent(mode)}`;
+            setSource({ kind: "go2rtc", playerUrl });
             setError(false);
           } else if (data.streamUrl) {
             setSource({
@@ -197,10 +72,14 @@ export default function CameraFeed({ config }: CameraFeedProps) {
         .catch(() => setError(true))
         .finally(() => setLoading(false));
     } else {
-      setSource({ kind: "url", url: config.url, feedType: config.type });
+      setSource({
+        kind: "url",
+        url: config.url,
+        feedType: config.type,
+      });
       setLoading(false);
     }
-  }, [config.url, config.enabled, config.type]);
+  }, [config.url, config.enabled, config.type, config.streamMode]);
 
   // Snapshot refresh (only for static image URLs)
   useEffect(() => {
@@ -209,7 +88,11 @@ export default function CameraFeed({ config }: CameraFeedProps) {
     const baseUrl = config.url;
     const interval = setInterval(() => {
       const sep = baseUrl.includes("?") ? "&" : "?";
-      setSource({ kind: "url", url: `${baseUrl}${sep}t=${Date.now()}`, feedType: "image" });
+      setSource({
+        kind: "url",
+        url: `${baseUrl}${sep}t=${Date.now()}`,
+        feedType: "image",
+      });
     }, config.refreshInterval * 1000);
     return () => clearInterval(interval);
   }, [source, config.url, config.refreshInterval]);
@@ -218,38 +101,46 @@ export default function CameraFeed({ config }: CameraFeedProps) {
 
   if (loading) {
     return (
-      <div className="w-full h-full flex items-center justify-center rounded-xl" style={{ background: "var(--card-bg)" }}>
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Connecting to camera...</p>
+      <div
+        className="w-full h-full flex items-center justify-center rounded-xl"
+        style={{ background: "var(--card-bg)" }}
+      >
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          Connecting to camera...
+        </p>
       </div>
     );
   }
 
   if (error || !source) {
     return (
-      <div className="w-full h-full flex items-center justify-center rounded-xl" style={{ background: "var(--card-bg)" }}>
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Camera unavailable</p>
+      <div
+        className="w-full h-full flex items-center justify-center rounded-xl"
+        style={{ background: "var(--card-bg)" }}
+      >
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          Camera unavailable
+        </p>
       </div>
     );
   }
 
-  if (source.kind === "webrtc") {
+  if (source.kind === "go2rtc") {
     return (
-      <LiveVideo
-        host={source.host}
-        port={source.port}
-        streamName={source.streamName}
-        className="w-full h-full object-cover rounded-xl"
+      <iframe
+        src={source.playerUrl}
+        className="w-full h-full rounded-xl border-0"
+        allow="autoplay; fullscreen; encrypted-media"
+        title="Camera Feed"
+        style={{ background: "#000" }}
       />
     );
   }
 
-  const streamUrl = source.url;
-  const feedType = source.feedType;
-
-  if (feedType === "iframe") {
+  if (source.feedType === "iframe") {
     return (
       <iframe
-        src={streamUrl}
+        src={source.url}
         className="w-full h-full rounded-xl border-0"
         allow="autoplay; fullscreen"
         title="Camera Feed"
@@ -260,7 +151,7 @@ export default function CameraFeed({ config }: CameraFeedProps) {
 
   return (
     <img
-      src={streamUrl}
+      src={source.url}
       alt="Camera Feed"
       className="w-full h-full object-cover rounded-xl"
       onError={() => setError(true)}

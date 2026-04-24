@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Azan Kiosk
+Comment=Launch the Azan dashboard in fullscreen kiosk mode
+Icon=applications-multimedia
+Terminal=false
+Categories=Utility;
+Exec=bash -c 'rm -f "$HOME/.config/azan-kiosk-profile/Singleton"*; BROWSER=$(command -v google-chrome || command -v chromium || command -v chromium-browser); exec "$BROWSER" --kiosk --start-fullscreen --user-data-dir="$HOME/.config/azan-kiosk-profile" --autoplay-policy=no-user-gesture-required --noerrdialogs --disable-infobars --disable-session-crashed-bubble --disable-features=TranslateUI --disable-pinch --overscroll-history-navigation=0 --no-first-run --no-default-browser-check --password-store=basic --check-for-update-interval=31536000 --disable-component-update "http://192.168.1.146:3002"'

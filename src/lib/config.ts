@@ -56,7 +56,7 @@ const DEFAULT_CONFIG: AppConfig = {
     url: "",
     type: "image",
     refreshInterval: 0,
-    streamMode: "mse",
+    streamMode: "webrtc",
   },
   layout: {
     widgets: DEFAULT_GRID_WIDGETS,

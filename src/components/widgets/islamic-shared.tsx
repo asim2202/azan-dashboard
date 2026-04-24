@@ -28,31 +28,28 @@ export function useAutoScroll(deps: unknown[]) {
 
     outer.scrollTop = 0;
 
+    // Track animation frame at the effect scope so cleanup actually cancels it.
+    let animFrame: number | null = null;
+
     const checkTimer = setTimeout(() => {
-      const overflow = inner.scrollHeight - outer.clientHeight;
+      const el = outer;
+      const overflow = inner.scrollHeight - el.clientHeight;
       if (overflow <= 0) {
         setNeedsScroll(false);
         return;
       }
       setNeedsScroll(true);
 
-      const speed = 40;
+      const speed = 40; // px/sec
       const pauseStart = 10000;
       const pauseEnd = 10000;
       const scrollDuration = (overflow / speed) * 1000;
 
-      let animFrame: number;
-      let startTime: number | null = null;
       let phase: "pause-start" | "scrolling" | "pause-end" = "pause-start";
       let phaseStart = 0;
 
-      const el = outer;
       function tick(timestamp: number) {
-        if (!el) return;
-        if (!startTime) {
-          startTime = timestamp;
-          phaseStart = timestamp;
-        }
+        if (!phaseStart) phaseStart = timestamp;
         const elapsed = timestamp - phaseStart;
 
         if (phase === "pause-start") {
@@ -78,10 +75,12 @@ export function useAutoScroll(deps: unknown[]) {
         animFrame = requestAnimationFrame(tick);
       }
       animFrame = requestAnimationFrame(tick);
-      return () => cancelAnimationFrame(animFrame);
     }, 500);
 
-    return () => clearTimeout(checkTimer);
+    return () => {
+      clearTimeout(checkTimer);
+      if (animFrame !== null) cancelAnimationFrame(animFrame);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 

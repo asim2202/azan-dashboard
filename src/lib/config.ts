@@ -56,6 +56,7 @@ const DEFAULT_CONFIG: AppConfig = {
     url: "",
     type: "image",
     refreshInterval: 0,
+    streamMode: "mse",
   },
   layout: {
     widgets: DEFAULT_GRID_WIDGETS,

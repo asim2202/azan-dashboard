@@ -42,7 +42,7 @@ const DEFAULT_CONFIG: AppConfig = {
     cardEntrance: true, cardShimmer: true, prayerGlow: true, weatherIcons: true,
     celestial: true, clouds: true, lightning: true,
   },
-  camera: { enabled: false, url: "", type: "image", refreshInterval: 0 },
+  camera: { enabled: false, url: "", type: "image", refreshInterval: 0, streamMode: "mse" },
   layout: { widgets: DEFAULT_GRID_WIDGETS },
   dataSources: { iacadEnabled: true, weatherEnabled: true },
 };
@@ -96,6 +96,34 @@ export default function Home() {
       window.removeEventListener("resize", check);
     };
   }, []);
+
+  // Try to auto-unlock audio on mount. If the browser allows autoplay
+  // (e.g. Chromium launched with --autoplay-policy=no-user-gesture-required),
+  // this succeeds silently and the AudioUnlockButton overlay never appears.
+  useEffect(() => {
+    if (audioUnlocked) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const audio = new Audio();
+        audio.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+        audio.volume = 0;
+        await audio.play();
+        // Also unlock the Web Audio context
+        try {
+          const ctx = new AudioContext();
+          const source = ctx.createBufferSource();
+          source.buffer = ctx.createBuffer(1, 1, 22050);
+          source.connect(ctx.destination);
+          source.start();
+        } catch {}
+        if (!cancelled) setAudioUnlocked(true);
+      } catch {
+        // Autoplay blocked — user will see the unlock overlay and tap it
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [audioUnlocked]);
 
   const timezone = config.location.timezone;
   const { time: currentTime, mounted } = useCurrentTime();

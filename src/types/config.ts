@@ -59,6 +59,8 @@ export interface CameraConfig {
   url: string;
   type: "image" | "iframe";
   refreshInterval: number;
+  /** How to render RTSP streams via go2rtc. Default "mse" = most reliable. */
+  streamMode?: "webrtc" | "mse" | "mjpeg";
 }
 
 export type WidgetSize = "H" | "V";

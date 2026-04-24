@@ -11,7 +11,11 @@ interface Props {
 }
 
 export default function IslamicContentWidgetV({ hadith, verse, activeSlide, fading, onSetSlide }: Props) {
-  const { outerRef, innerRef, needsScroll } = useAutoScroll([activeSlide, hadith, verse, fading]);
+  // Scroll should restart ONLY when the displayed content changes.
+  // Don't include `fading` (pure visual state) or the non-displayed slide's
+  // content (refetching the other one shouldn't reset the current scroll).
+  const displayed = activeSlide === "hadith" ? hadith : verse;
+  const { outerRef, innerRef, needsScroll } = useAutoScroll([activeSlide, displayed]);
 
   const showHadith = activeSlide === "hadith" && hadith;
   const showAyah = activeSlide === "ayah" && verse;

@@ -2,16 +2,17 @@
 
 import { useState, useEffect } from "react";
 import type { CameraConfig } from "@/types/config";
+import HlsVideo from "./HlsVideo";
 
 /**
- * Simple camera feed renderer.
+ * Camera feed renderer.
  *
- * For RTSP/RTSPS URLs: fetches /api/camera-stream to confirm go2rtc is up
- * and to get the stream name, then renders an iframe pointing at go2rtc's
- * built-in player at http://<host>:1984/stream.html?src=<name>&mode=<mode>.
+ * For RTSP/RTSPS URLs in HLS mode: streams .m3u8 from go2rtc into an
+ * hls.js-backed <video> element. Most network-resilient option (each
+ * segment is a separate HTTP request with its own retry).
  *
- * go2rtc handles ALL the WebRTC/MSE negotiation internally — we just embed
- * its player. Much more reliable than rolling our own PeerConnection.
+ * For RTSP/RTSPS in any other mode (webrtc/mse/mjpeg): iframes go2rtc's
+ * built-in player at /stream.html?src=...&mode=...
  *
  * For non-RTSP URLs: uses the user's chosen type (image/iframe) directly.
  */
@@ -20,6 +21,10 @@ interface CameraFeedProps {
   config: CameraConfig;
 }
 
+type HlsSource = {
+  kind: "hls";
+  m3u8Url: string;
+};
 type Go2rtcSource = {
   kind: "go2rtc";
   playerUrl: string;
@@ -29,7 +34,7 @@ type UrlSource = {
   url: string;
   feedType: "image" | "iframe";
 };
-type Source = Go2rtcSource | UrlSource;
+type Source = HlsSource | Go2rtcSource | UrlSource;
 
 /**
  * Watchdog interval: every N minutes we force-reload the camera iframe
@@ -63,13 +68,22 @@ export default function CameraFeed({ config }: CameraFeedProps) {
             const host = window.location.hostname;
             const port = data.go2rtcPort || 1984;
             const mode = config.streamMode || "hls";
-            // media=video tells go2rtc to negotiate video only — drops the
-            // audio track entirely, so the stream is silent at the source.
-            // _wd is the watchdog cache-bust; changing it forces a reload.
-            const playerUrl = `http://${host}:${port}/stream.html?src=${encodeURIComponent(
-              data.streamName
-            )}&mode=${encodeURIComponent(mode)}&media=video&_wd=${reloadKey}`;
-            setSource({ kind: "go2rtc", playerUrl });
+            if (mode === "hls") {
+              // Use hls.js with go2rtc's m3u8 endpoint directly. Chromium
+              // doesn't natively play HLS, so embedding stream.html?mode=hls
+              // would show a black screen.
+              const m3u8Url = `http://${host}:${port}/api/stream.m3u8?src=${encodeURIComponent(
+                data.streamName
+              )}`;
+              setSource({ kind: "hls", m3u8Url });
+            } else {
+              // media=video drops the audio track at negotiation time.
+              // _wd cache-busts on watchdog reload.
+              const playerUrl = `http://${host}:${port}/stream.html?src=${encodeURIComponent(
+                data.streamName
+              )}&mode=${encodeURIComponent(mode)}&media=video&_wd=${reloadKey}`;
+              setSource({ kind: "go2rtc", playerUrl });
+            }
             setError(false);
           } else if (data.streamUrl) {
             setSource({
@@ -149,6 +163,17 @@ export default function CameraFeed({ config }: CameraFeedProps) {
           Camera unavailable
         </p>
       </div>
+    );
+  }
+
+  if (source.kind === "hls") {
+    return (
+      <HlsVideo
+        src={source.m3u8Url}
+        className="w-full h-full rounded-xl"
+        muted
+        reloadKey={reloadKey}
+      />
     );
   }
 

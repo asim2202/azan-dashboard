@@ -29,6 +29,9 @@ export default function HlsVideo({ src, className, muted = true, reloadKey = 0 }
     let destroyed = false;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let hls: any = null;
+    let stallWatchdog: ReturnType<typeof setInterval> | null = null;
+    let lastProgressTime = 0;
+    let lastCurrentTime = 0;
 
     async function setup() {
       if (!video) return;
@@ -44,14 +47,28 @@ export default function HlsVideo({ src, className, muted = true, reloadKey = 0 }
           if (destroyed) return;
 
           hls = new Hls({
-            // Tuned for live streams over flaky networks
+            // Tuned for live streams over flaky networks.
+            // Higher retry counts and exponential backoff help survive long
+            // WiFi blips without giving up.
             liveSyncDuration: 3,
             liveMaxLatencyDuration: 10,
             maxBufferLength: 15,
             maxMaxBufferLength: 30,
-            fragLoadingMaxRetry: 8,
-            manifestLoadingMaxRetry: 8,
-            levelLoadingMaxRetry: 8,
+            fragLoadingMaxRetry: 999,
+            manifestLoadingMaxRetry: 999,
+            levelLoadingMaxRetry: 999,
+            fragLoadingRetryDelay: 1000,
+            manifestLoadingRetryDelay: 1000,
+            levelLoadingRetryDelay: 1000,
+            fragLoadingMaxRetryTimeout: 30000,
+          });
+
+          // Track playback progress; we use this to detect silent stalls.
+          video.addEventListener("timeupdate", () => {
+            if (video.currentTime !== lastCurrentTime) {
+              lastCurrentTime = video.currentTime;
+              lastProgressTime = Date.now();
+            }
           });
 
           hls.on(Hls.Events.ERROR, (_evt: unknown, data: { type: string; details: string; fatal: boolean }) => {
@@ -63,9 +80,11 @@ export default function HlsVideo({ src, className, muted = true, reloadKey = 0 }
               console.warn("[HlsVideo] Media error, recovering:", data.details);
               hls.recoverMediaError();
             } else {
-              console.error("[HlsVideo] Fatal error:", data);
-              setError(`${data.type}: ${data.details}`);
-              hls.destroy();
+              // Other fatal — destroy and rebuild from scratch instead of giving up
+              console.warn("[HlsVideo] Fatal error, rebuilding:", data);
+              try { hls.destroy(); } catch { /* */ }
+              hls = null;
+              setTimeout(() => { if (!destroyed) setup(); }, 2000);
             }
           });
 
@@ -74,6 +93,22 @@ export default function HlsVideo({ src, className, muted = true, reloadKey = 0 }
           hls.on(Hls.Events.MANIFEST_PARSED, async () => {
             try { await video.play(); } catch { /* autoplay may need user gesture */ }
           });
+
+          // Stall watchdog: if currentTime hasn't advanced for 8 seconds,
+          // hls.js has effectively given up. Tear down and rebuild.
+          lastProgressTime = Date.now();
+          stallWatchdog = setInterval(() => {
+            if (destroyed || video.paused) return;
+            const idleMs = Date.now() - lastProgressTime;
+            if (idleMs > 8000) {
+              console.warn(`[HlsVideo] Stalled for ${(idleMs/1000).toFixed(0)}s — rebuilding player`);
+              try { hls?.destroy(); } catch { /* */ }
+              hls = null;
+              lastProgressTime = Date.now(); // avoid immediate re-trigger
+              setTimeout(() => { if (!destroyed) setup(); }, 1500);
+            }
+          }, 3000);
+
           return;
         }
 
@@ -95,6 +130,7 @@ export default function HlsVideo({ src, className, muted = true, reloadKey = 0 }
 
     return () => {
       destroyed = true;
+      if (stallWatchdog) clearInterval(stallWatchdog);
       if (hls) {
         try { hls.destroy(); } catch { /* */ }
       }

@@ -37,12 +37,12 @@ type UrlSource = {
 type Source = HlsSource | Go2rtcSource | UrlSource;
 
 /**
- * Watchdog interval: every N minutes we force-reload the camera iframe
- * by changing a cache-bust query param. Resets any accumulated stream
- * state and recovers from silent stalls — the kind that no protocol-level
- * reconnect will catch.
+ * Iframe-reload watchdog interval. Forces a clean reload of go2rtc's
+ * stream.html iframe (webrtc/mse/mjpeg modes only). HLS mode has its own
+ * internal stall-watchdog inside HlsVideo which is more reliable than a
+ * full unmount/remount.
  */
-const WATCHDOG_RELOAD_MINUTES = 30;
+const IFRAME_WATCHDOG_RELOAD_MINUTES = 30;
 
 export default function CameraFeed({ config }: CameraFeedProps) {
   const [source, setSource] = useState<Source | null>(null);
@@ -108,19 +108,23 @@ export default function CameraFeed({ config }: CameraFeedProps) {
     }
   }, [config.url, config.enabled, config.type, config.streamMode, reloadKey]);
 
-  // Watchdog: periodically bump reloadKey so the iframe re-renders with a
-  // fresh URL. Recovers from any silent stalls that accumulate over hours
-  // of unattended kiosk operation.
+  // Watchdog: periodically bump reloadKey ONLY for iframe-based modes
+  // (webrtc/mse/mjpeg). For HLS we don't reload — HlsVideo has its own
+  // internal stall-watchdog that recovers without unmounting the React
+  // component, which avoids a measured failure mode where rebuilding
+  // hls.js right after a previous successful run leaves the new instance
+  // permanently stuck at ~5 seconds of buffered content.
   useEffect(() => {
     if (!config.enabled || !config.url) return;
     const isRtsp =
       config.url.startsWith("rtsp://") || config.url.startsWith("rtsps://");
-    if (!isRtsp) return; // Only meaningful for go2rtc-served streams
+    if (!isRtsp) return;
+    if (config.streamMode === "hls") return; // HLS handles its own recovery
     const interval = setInterval(() => {
       setReloadKey((k) => k + 1);
-    }, WATCHDOG_RELOAD_MINUTES * 60 * 1000);
+    }, IFRAME_WATCHDOG_RELOAD_MINUTES * 60 * 1000);
     return () => clearInterval(interval);
-  }, [config.enabled, config.url]);
+  }, [config.enabled, config.url, config.streamMode]);
 
   // Snapshot refresh (only for static image URLs)
   useEffect(() => {
@@ -172,7 +176,8 @@ export default function CameraFeed({ config }: CameraFeedProps) {
         src={source.m3u8Url}
         className="w-full h-full rounded-xl"
         muted
-        reloadKey={reloadKey}
+        // Don't pass reloadKey — HlsVideo has its own stall-watchdog and
+        // remounting it is what was causing the post-30-min stuck-at-5s bug
       />
     );
   }

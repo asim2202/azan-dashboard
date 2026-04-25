@@ -95,10 +95,17 @@ export default function HlsVideo({ src, className, muted = true, reloadKey = 0 }
           });
 
           // Stall watchdog: if currentTime hasn't advanced for 8 seconds,
-          // hls.js has effectively given up. Tear down and rebuild.
+          // tear down and rebuild. Also: if the video stays paused after a
+          // rebuild (paused with no err state), force a play() retry.
           lastProgressTime = Date.now();
           stallWatchdog = setInterval(() => {
-            if (destroyed || video.paused) return;
+            if (destroyed) return;
+            // If paused with no error, try to resume — covers the case where
+            // a rebuild's MANIFEST_PARSED → play() failed silently.
+            if (video.paused && !video.error) {
+              video.play().catch(() => {});
+              return;
+            }
             const idleMs = Date.now() - lastProgressTime;
             if (idleMs > 8000) {
               console.warn(`[HlsVideo] Stalled for ${(idleMs/1000).toFixed(0)}s — rebuilding player`);

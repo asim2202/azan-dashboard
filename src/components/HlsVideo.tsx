@@ -33,57 +33,58 @@ export default function HlsVideo({ src, className, muted = true, reloadKey = 0 }
     async function setup() {
       if (!video) return;
 
-      // Native HLS support (Safari/iOS) — just set src and let the browser handle it
-      if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        video.src = src;
-        try { await video.play(); } catch { /* autoplay may need user gesture */ }
-        return;
-      }
-
-      // Otherwise, use hls.js (Chrome, Firefox, Edge)
+      // Prefer hls.js (Chrome's canPlayType lies — returns "maybe" for HLS
+      // mime types it can't actually play). Only fall back to native HLS
+      // playback when hls.js isn't supported (i.e. Safari).
       try {
         const mod = await import("hls.js");
         const Hls = mod.default;
 
-        if (!Hls.isSupported()) {
-          setError("HLS not supported in this browser");
+        if (Hls.isSupported()) {
+          if (destroyed) return;
+
+          hls = new Hls({
+            // Tuned for live streams over flaky networks
+            liveSyncDuration: 3,
+            liveMaxLatencyDuration: 10,
+            maxBufferLength: 15,
+            maxMaxBufferLength: 30,
+            fragLoadingMaxRetry: 8,
+            manifestLoadingMaxRetry: 8,
+            levelLoadingMaxRetry: 8,
+          });
+
+          hls.on(Hls.Events.ERROR, (_evt: unknown, data: { type: string; details: string; fatal: boolean }) => {
+            if (!data.fatal) return;
+            if (data.type === "networkError") {
+              console.warn("[HlsVideo] Network error, retrying:", data.details);
+              hls.startLoad();
+            } else if (data.type === "mediaError") {
+              console.warn("[HlsVideo] Media error, recovering:", data.details);
+              hls.recoverMediaError();
+            } else {
+              console.error("[HlsVideo] Fatal error:", data);
+              setError(`${data.type}: ${data.details}`);
+              hls.destroy();
+            }
+          });
+
+          hls.loadSource(src);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, async () => {
+            try { await video.play(); } catch { /* autoplay may need user gesture */ }
+          });
           return;
         }
-        if (destroyed) return;
 
-        hls = new Hls({
-          // Tuned for live streams over flaky networks
-          liveSyncDuration: 3,         // try to stay 3s behind live
-          liveMaxLatencyDuration: 10,  // catch up if we drift past 10s
-          maxBufferLength: 15,         // hold at most 15s of buffer
-          maxMaxBufferLength: 30,
-          // Aggressive auto-recovery
-          fragLoadingMaxRetry: 8,
-          manifestLoadingMaxRetry: 8,
-          levelLoadingMaxRetry: 8,
-        });
+        // hls.js not supported — try native HLS (Safari/iOS)
+        if (video.canPlayType("application/vnd.apple.mpegurl")) {
+          video.src = src;
+          try { await video.play(); } catch { /* autoplay may need gesture */ }
+          return;
+        }
 
-        hls.on(Hls.Events.ERROR, (_evt: unknown, data: { type: string; details: string; fatal: boolean }) => {
-          if (!data.fatal) return;
-          // Recover according to hls.js best-practice
-          if (data.type === "networkError") {
-            console.warn("[HlsVideo] Network error, retrying:", data.details);
-            hls.startLoad();
-          } else if (data.type === "mediaError") {
-            console.warn("[HlsVideo] Media error, recovering:", data.details);
-            hls.recoverMediaError();
-          } else {
-            console.error("[HlsVideo] Fatal error:", data);
-            setError(`${data.type}: ${data.details}`);
-            hls.destroy();
-          }
-        });
-
-        hls.loadSource(src);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, async () => {
-          try { await video.play(); } catch { /* autoplay may need user gesture */ }
-        });
+        setError("HLS not supported in this browser");
       } catch (err) {
         console.error("[HlsVideo] Setup failed:", err);
         setError(String(err));

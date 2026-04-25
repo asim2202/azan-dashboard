@@ -53,9 +53,11 @@ export default function CameraFeed({ config }: CameraFeedProps) {
             const host = window.location.hostname;
             const port = data.go2rtcPort || 1984;
             const mode = config.streamMode || "webrtc";
+            // media=video tells go2rtc to negotiate video only — drops the
+            // audio track entirely, so the stream is silent at the source.
             const playerUrl = `http://${host}:${port}/stream.html?src=${encodeURIComponent(
               data.streamName
-            )}&mode=${encodeURIComponent(mode)}`;
+            )}&mode=${encodeURIComponent(mode)}&media=video`;
             setSource({ kind: "go2rtc", playerUrl });
             setError(false);
           } else if (data.streamUrl) {

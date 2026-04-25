@@ -515,12 +515,13 @@ export default function SettingsPage() {
           </Field>
           <Field label="Stream Mode (RTSP URLs only)">
             <select
-              value={config.camera?.streamMode || "webrtc"}
+              value={config.camera?.streamMode || "hls"}
               onChange={(e) => updateConfig("camera.streamMode", e.target.value)}
               className="input-field"
             >
-              <option value="webrtc">WebRTC (lowest latency, ~0.3s)</option>
+              <option value="hls">HLS (most resilient, ~3s latency) — recommended</option>
               <option value="mse">MSE (very smooth, ~1s latency)</option>
+              <option value="webrtc">WebRTC (lowest latency, ~0.3s) — needs solid network</option>
               <option value="mjpeg">MJPEG (no audio, highest bandwidth)</option>
             </select>
           </Field>

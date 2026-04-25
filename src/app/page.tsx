@@ -42,7 +42,7 @@ const DEFAULT_CONFIG: AppConfig = {
     cardEntrance: true, cardShimmer: true, prayerGlow: true, weatherIcons: true,
     celestial: true, clouds: true, lightning: true,
   },
-  camera: { enabled: false, url: "", type: "image", refreshInterval: 0, streamMode: "webrtc" },
+  camera: { enabled: false, url: "", type: "image", refreshInterval: 0, streamMode: "hls" },
   layout: { widgets: DEFAULT_GRID_WIDGETS },
   dataSources: { iacadEnabled: true, weatherEnabled: true },
 };

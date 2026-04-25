@@ -31,10 +31,20 @@ type UrlSource = {
 };
 type Source = Go2rtcSource | UrlSource;
 
+/**
+ * Watchdog interval: every N minutes we force-reload the camera iframe
+ * by changing a cache-bust query param. Resets any accumulated stream
+ * state and recovers from silent stalls — the kind that no protocol-level
+ * reconnect will catch.
+ */
+const WATCHDOG_RELOAD_MINUTES = 30;
+
 export default function CameraFeed({ config }: CameraFeedProps) {
   const [source, setSource] = useState<Source | null>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
+  // Bump this to force the iframe to reload (preserves React tree).
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!config.enabled || !config.url) {
@@ -52,12 +62,13 @@ export default function CameraFeed({ config }: CameraFeedProps) {
           if (data.source === "go2rtc" && data.streamName) {
             const host = window.location.hostname;
             const port = data.go2rtcPort || 1984;
-            const mode = config.streamMode || "webrtc";
+            const mode = config.streamMode || "hls";
             // media=video tells go2rtc to negotiate video only — drops the
             // audio track entirely, so the stream is silent at the source.
+            // _wd is the watchdog cache-bust; changing it forces a reload.
             const playerUrl = `http://${host}:${port}/stream.html?src=${encodeURIComponent(
               data.streamName
-            )}&mode=${encodeURIComponent(mode)}&media=video`;
+            )}&mode=${encodeURIComponent(mode)}&media=video&_wd=${reloadKey}`;
             setSource({ kind: "go2rtc", playerUrl });
             setError(false);
           } else if (data.streamUrl) {
@@ -81,7 +92,21 @@ export default function CameraFeed({ config }: CameraFeedProps) {
       });
       setLoading(false);
     }
-  }, [config.url, config.enabled, config.type, config.streamMode]);
+  }, [config.url, config.enabled, config.type, config.streamMode, reloadKey]);
+
+  // Watchdog: periodically bump reloadKey so the iframe re-renders with a
+  // fresh URL. Recovers from any silent stalls that accumulate over hours
+  // of unattended kiosk operation.
+  useEffect(() => {
+    if (!config.enabled || !config.url) return;
+    const isRtsp =
+      config.url.startsWith("rtsp://") || config.url.startsWith("rtsps://");
+    if (!isRtsp) return; // Only meaningful for go2rtc-served streams
+    const interval = setInterval(() => {
+      setReloadKey((k) => k + 1);
+    }, WATCHDOG_RELOAD_MINUTES * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [config.enabled, config.url]);
 
   // Snapshot refresh (only for static image URLs)
   useEffect(() => {

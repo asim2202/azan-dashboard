@@ -34,6 +34,10 @@ export function useAzan(
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const triggeredRef = useRef<Set<string>>(new Set()); // "fajr-azan", "fajr-iqama"
   const lastDateRef = useRef<string>("");
+  // Hard timer that force-dismisses the overlay after 5 minutes regardless of
+  // audio state — protects against a stuck overlay if the audio.ended event
+  // never fires (system hang, audio interrupted, browser tab issues).
+  const overlayHardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Reset triggered prayers at midnight
   const today = currentTime.toLocaleDateString("en-CA");
@@ -61,6 +65,7 @@ export function useAzan(
     return () => {
       audio.pause();
       audio.src = "";
+      if (overlayHardTimerRef.current) clearTimeout(overlayHardTimerRef.current);
     };
   }, []);
 
@@ -163,12 +168,23 @@ export function useAzan(
           iqamaCountdownEnd: prayer.iqamaDate,
         });
 
+        // Hard ceiling: 5 minutes from now, force the overlay to dismiss
+        // even if audio.ended never fires.
+        if (overlayHardTimerRef.current) clearTimeout(overlayHardTimerRef.current);
+        overlayHardTimerRef.current = setTimeout(() => {
+          setState((prev) => ({ ...prev, showOverlay: false, isPlaying: false }));
+        }, 5 * 60 * 1000);
+
         break;
       }
     }
   }, [prayers, currentTime, audioEnabled, audioUnlocked, defaultAzan, fajrAzan, iqamaSound, volume, state.isPlaying, preIqamaAlert]);
 
   const dismissOverlay = useCallback(() => {
+    if (overlayHardTimerRef.current) {
+      clearTimeout(overlayHardTimerRef.current);
+      overlayHardTimerRef.current = null;
+    }
     setState((prev) => ({ ...prev, showOverlay: false }));
   }, []);
 

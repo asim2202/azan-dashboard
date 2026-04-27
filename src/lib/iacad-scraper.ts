@@ -1,16 +1,19 @@
 import type { DailyPrayers, PrayerTime } from "@/types/prayer";
 import { getIqamaOffsets } from "./iqama-schedule";
 
-// AlAdhan API with method 16 = Dubai (IACAD) calculation parameters
-// Fajr angle: 18.2°, Isha angle: 18.2°, Dhuhr +3min, Maghrib +3min, Sunset +3min
-// This matches the official IACAD/Awqaf prayer times for Dubai.
-//
-// We use the latitude/longitude endpoint (NOT timingsByCity) because the
-// city-name lookup silently returns wrong coordinates for slightly malformed
-// city names (trailing whitespace, custom names like "Wadi Al Safa 3, Dubai",
-// etc.) — AlAdhan still returns code:200 but with default coordinates from
-// some other country. We've seen it return (8.88°N, 7.77°E) — Nigeria —
-// for "Dubai " with a trailing space.
+// IACAD's own public CRM API — returns the entire month's prayer times
+// for a given city. Used by https://eservices.iacad.gov.ae/prayer-time
+// itself, so our values match the official Dubai prayer times exactly.
+//   https://api-crm.iacad.gov.ae/api//prayertime/getprayerfromlink?month=M&year=YYYY&cityid=1
+// cityid=1 = Dubai City. Response is an array of objects, one per day,
+// where each entry has listDateGreg (yyyy-MM-ddT00:00:00) and the
+// six prayer times as ISO datetimes (date prefix is "today" — the time
+// portion is what's meaningful).
+const IACAD_API = "https://api-crm.iacad.gov.ae/api//prayertime/getprayerfromlink";
+
+// AlAdhan with method 16 = Dubai (experimental). Used as fallback when
+// IACAD's own API is unreachable. Times match within 1-3 min due to slightly
+// different sunrise/maghrib correction conventions.
 const ALADHAN_API = "https://api.aladhan.com/v1/timings";
 
 const PRAYER_LABELS: Record<string, { label: string; arabic: string }> = {
@@ -56,6 +59,112 @@ interface AlAdhanTimings {
   Midnight: string;
 }
 
+/**
+ * Build a DailyPrayers object from a map of prayer name -> "HH:mm" strings.
+ * Used by both the IACAD-direct path and the AlAdhan fallback path.
+ */
+function buildDailyPrayers(
+  times: Record<string, string>,
+  timezone: string,
+  iqamaOffsetsOverride?: { fajr?: number; dhuhr?: number; asr?: number; maghrib?: number; isha?: number }
+): DailyPrayers {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const defaultOffsets = getIqamaOffsets(month);
+  const offsets = { ...defaultOffsets, ...iqamaOffsetsOverride };
+
+  const order = ["fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"] as const;
+
+  const prayers: PrayerTime[] = order.map((key) => {
+    const cleanTime = (times[key] || "").replace(/\s*\(.*\)/, "").trim();
+    const azanDate = timeStrToDate(cleanTime, timezone);
+    const isSunrise = key === "sunrise";
+    const offset = isSunrise ? 0 : (offsets as Record<string, number>)[key] || 0;
+    const iqamaDate = isSunrise ? null : addMinutes(azanDate, offset);
+
+    return {
+      name: key as PrayerTime["name"],
+      label: PRAYER_LABELS[key]?.label || key,
+      arabicLabel: PRAYER_LABELS[key]?.arabic || "",
+      azanTime: cleanTime,
+      iqamaTime: iqamaDate ? formatTime(iqamaDate, timezone) : null,
+      azanDate,
+      iqamaDate,
+    };
+  });
+
+  const todayStr = now.toLocaleDateString("en-CA", { timeZone: timezone });
+  return {
+    date: todayStr,
+    prayers,
+    source: "iacad",
+    lastUpdated: new Date().toISOString(),
+  };
+}
+
+/* ─────────── Official IACAD source ─────────── */
+
+interface IacadDay {
+  fajr: string;     // ISO datetime, time portion is what matters
+  sunrise: string;
+  dhuhr: string;
+  asr: string;
+  maghrib: string;
+  isha: string;
+  listDateGreg: string; // "yyyy-MM-ddT00:00:00"
+}
+
+async function fetchIacadOfficial(timezone: string): Promise<Record<string, string> | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    const now = new Date();
+    // Use the timezone-local date for month/year so we don't ask for the
+    // wrong month at midnight UTC etc.
+    const localParts = now.toLocaleDateString("en-CA", { timeZone: timezone }).split("-");
+    const year = parseInt(localParts[0], 10);
+    const month = parseInt(localParts[1], 10);
+    const dayStr = `${year}-${String(month).padStart(2, "0")}-${localParts[2]}`;
+
+    const url = `${IACAD_API}?month=${month}&year=${year}&cityid=1`;
+    console.log("[IACAD] Fetching:", url);
+
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    });
+    clearTimeout(timeout);
+    if (!res.ok) {
+      console.error("[IACAD] HTTP error:", res.status);
+      return null;
+    }
+
+    const days: IacadDay[] = await res.json();
+    const today = days.find((d) => d.listDateGreg?.startsWith(dayStr));
+    if (!today) {
+      console.error("[IACAD] No entry for", dayStr);
+      return null;
+    }
+
+    // Extract HH:mm from each ISO datetime
+    const timeOf = (iso: string) => iso.split("T")[1]?.slice(0, 5) || "";
+    return {
+      fajr: timeOf(today.fajr),
+      sunrise: timeOf(today.sunrise),
+      dhuhr: timeOf(today.dhuhr),
+      asr: timeOf(today.asr),
+      maghrib: timeOf(today.maghrib),
+      isha: timeOf(today.isha),
+    };
+  } catch (err) {
+    console.error("[IACAD] Fetch failed:", err);
+    return null;
+  }
+}
+
+/* ─────────── AlAdhan fallback types ─────────── */
+
 interface AlAdhanResponse {
   code: number;
   status: string;
@@ -87,6 +196,16 @@ export async function fetchDubaiPrayerTimes(
   latitude?: number,
   longitude?: number
 ): Promise<DailyPrayers | null> {
+  // 1) Try IACAD's own API first — this is the official source for Dubai
+  //    and matches what eservices.iacad.gov.ae shows exactly.
+  const iacadTimes = await fetchIacadOfficial(timezone);
+  if (iacadTimes) {
+    console.log("[Prayer Times] Using IACAD official API");
+    return buildDailyPrayers(iacadTimes, timezone, iqamaOffsets);
+  }
+
+  // 2) Fallback: AlAdhan with method 16 (Dubai).
+  console.log("[Prayer Times] IACAD unavailable — falling back to AlAdhan");
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
@@ -130,50 +249,17 @@ export async function fetchDubaiPrayerTimes(
     }
 
     const t = json.data.timings;
-
-    // Get iqama offsets
-    const month = now.getMonth() + 1;
-    const defaultOffsets = getIqamaOffsets(month);
-    const offsets = { ...defaultOffsets, ...iqamaOffsets };
-
-    const prayerEntries: { key: string; time: string }[] = [
-      { key: "fajr", time: t.Fajr },
-      { key: "sunrise", time: t.Sunrise },
-      { key: "dhuhr", time: t.Dhuhr },
-      { key: "asr", time: t.Asr },
-      { key: "maghrib", time: t.Maghrib },
-      { key: "isha", time: t.Isha },
-    ];
-
-    const prayers: PrayerTime[] = prayerEntries.map(({ key, time }) => {
-      // AlAdhan returns "HH:mm" or "HH:mm (timezone)" - strip any extra text
-      const cleanTime = time.replace(/\s*\(.*\)/, "").trim();
-      const azanDate = timeStrToDate(cleanTime, timezone);
-      const isSunrise = key === "sunrise";
-      const offset = isSunrise ? 0 : (offsets as Record<string, number>)[key] || 0;
-      const iqamaDate = isSunrise ? null : addMinutes(azanDate, offset);
-
-      return {
-        name: key as PrayerTime["name"],
-        label: PRAYER_LABELS[key]?.label || key,
-        arabicLabel: PRAYER_LABELS[key]?.arabic || "",
-        azanTime: cleanTime,
-        iqamaTime: iqamaDate ? formatTime(iqamaDate, timezone) : null,
-        azanDate,
-        iqamaDate,
-      };
-    });
-
     const todayStr = now.toLocaleDateString("en-CA", { timeZone: timezone });
-
     console.log("[AlAdhan] Successfully fetched Dubai prayer times for", todayStr);
 
-    return {
-      date: todayStr,
-      prayers,
-      source: "iacad", // AlAdhan method 16 = Dubai/IACAD parameters
-      lastUpdated: new Date().toISOString(),
-    };
+    return buildDailyPrayers({
+      fajr: t.Fajr,
+      sunrise: t.Sunrise,
+      dhuhr: t.Dhuhr,
+      asr: t.Asr,
+      maghrib: t.Maghrib,
+      isha: t.Isha,
+    }, timezone, iqamaOffsets);
   } catch (error) {
     console.error("[AlAdhan] Fetch failed:", error);
     return null;

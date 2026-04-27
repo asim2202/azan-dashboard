@@ -40,7 +40,7 @@ export async function fetchWeather(
     latitude: latitude.toString(),
     longitude: longitude.toString(),
     timezone: timezone,
-    current: "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,apparent_temperature",
+    current: "temperature_2m,relative_humidity_2m,weather_code,cloud_cover,wind_speed_10m,apparent_temperature",
     hourly: "temperature_2m,weather_code,precipitation_probability",
     daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
     forecast_days: "7",
@@ -56,7 +56,22 @@ export async function fetchWeather(
 
   const data = await response.json();
   const current = data.current;
-  const code = current.weather_code as number;
+  let code = current.weather_code as number;
+  const cloudCover = current.cloud_cover as number | undefined;
+
+  // Override the WMO classification when cloud_cover disagrees with the
+  // weather_code. Open-Meteo's weather_code is a single-bucket classification
+  // that often calls 50-70% cloud cover "Overcast" (code 3) when reality is
+  // closer to "Partly cloudy" (code 2). Trust cloud_cover when available.
+  // (Only re-classify between the cloudiness bins; precipitation/storm/fog
+  // codes always win.)
+  if (typeof cloudCover === "number" && code <= 3) {
+    if (cloudCover < 12) code = 0;          // Clear
+    else if (cloudCover < 38) code = 1;     // Mainly clear
+    else if (cloudCover < 80) code = 2;     // Partly cloudy
+    else code = 3;                          // Overcast
+  }
+
   const wmo = WMO_CODES[code] || { description: "Unknown", icon: "cloud" };
 
   // Parse hourly (next 12 hours)

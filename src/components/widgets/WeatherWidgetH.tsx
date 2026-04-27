@@ -13,6 +13,7 @@ function CurrentPanel({ weather }: { weather: Weather }) {
       <span className="text-base text-center font-semibold" style={{ color: "var(--text-primary)" }}>{weather.description}</span>
       <div className="flex flex-col items-center gap-0.5 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
         <span>Feels {weather.apparentTemperature}&deg;</span>
+        <span>Humidity {weather.humidity}%</span>
         <span>Wind {weather.windSpeed} km/h</span>
         <span>Rain {weather.precipitationChance}%</span>
       </div>

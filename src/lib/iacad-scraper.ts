@@ -3,8 +3,15 @@ import { getIqamaOffsets } from "./iqama-schedule";
 
 // AlAdhan API with method 16 = Dubai (IACAD) calculation parameters
 // Fajr angle: 18.2°, Isha angle: 18.2°, Dhuhr +3min, Maghrib +3min, Sunset +3min
-// This matches the official IACAD/Awqaf prayer times for Dubai
-const ALADHAN_API = "https://api.aladhan.com/v1/timingsByCity";
+// This matches the official IACAD/Awqaf prayer times for Dubai.
+//
+// We use the latitude/longitude endpoint (NOT timingsByCity) because the
+// city-name lookup silently returns wrong coordinates for slightly malformed
+// city names (trailing whitespace, custom names like "Wadi Al Safa 3, Dubai",
+// etc.) — AlAdhan still returns code:200 but with default coordinates from
+// some other country. We've seen it return (8.88°N, 7.77°E) — Nigeria —
+// for "Dubai " with a trailing space.
+const ALADHAN_API = "https://api.aladhan.com/v1/timings";
 
 const PRAYER_LABELS: Record<string, { label: string; arabic: string }> = {
   fajr: { label: "Fajr", arabic: "الفجر" },
@@ -73,9 +80,12 @@ interface AlAdhanResponse {
 
 export async function fetchDubaiPrayerTimes(
   timezone: string,
-  city: string = "Dubai",
-  country: string = "UAE",
-  iqamaOffsets?: { fajr?: number; dhuhr?: number; asr?: number; maghrib?: number; isha?: number }
+  // city/country kept for backwards-compat but no longer used for the API call
+  _city: string = "Dubai",
+  _country: string = "UAE",
+  iqamaOffsets?: { fajr?: number; dhuhr?: number; asr?: number; maghrib?: number; isha?: number },
+  latitude?: number,
+  longitude?: number
 ): Promise<DailyPrayers | null> {
   try {
     const controller = new AbortController();
@@ -90,7 +100,14 @@ export async function fetchDubaiPrayerTimes(
       year: "numeric",
     }).split("/").join("-"); // DD-MM-YYYY
 
-    const url = `${ALADHAN_API}/${dateStr}?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=16`;
+    // Default to Dubai's central coordinates if caller didn't pass any.
+    // For IACAD, Dubai-wide official timings are essentially identical
+    // anywhere in the city (sub-second drift), so any valid Dubai lat/lon
+    // gives the same result.
+    const lat = latitude ?? 25.2048;
+    const lon = longitude ?? 55.2708;
+
+    const url = `${ALADHAN_API}/${dateStr}?latitude=${lat}&longitude=${lon}&method=16`;
 
     console.log("[AlAdhan] Fetching:", url);
 

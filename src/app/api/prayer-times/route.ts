@@ -4,17 +4,18 @@ import { calculatePrayerTimes } from "@/lib/prayer-calculator";
 import { fetchDubaiPrayerTimes } from "@/lib/iacad-scraper";
 import type { DailyPrayers } from "@/types/prayer";
 
-// In-memory cache
-let cache: { date: string; data: DailyPrayers } | null = null;
+// In-memory cache. Key includes location so config changes auto-invalidate.
+let cache: { key: string; date: string; data: DailyPrayers } | null = null;
 
 export async function GET(request: NextRequest) {
   const config = getConfig();
   const { latitude, longitude, timezone, city } = config.location;
 
   const today = new Date().toLocaleDateString("en-CA", { timeZone: timezone });
+  const cacheKey = `${today}|${latitude}|${longitude}|${config.calculationMethod}|${config.madhab}|${JSON.stringify(config.iqamaOffsets)}`;
 
-  // Return cached if same day
-  if (cache && cache.date === today) {
+  // Return cached only if BOTH the date and the location/config are unchanged
+  if (cache && cache.key === cacheKey) {
     return Response.json(cache.data);
   }
 
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
   // Try AlAdhan API with Dubai/IACAD method first
   if (config.dataSources.iacadEnabled) {
     try {
-      result = await fetchDubaiPrayerTimes(timezone, city, "UAE", config.iqamaOffsets);
+      result = await fetchDubaiPrayerTimes(timezone, city, "UAE", config.iqamaOffsets, latitude, longitude);
       if (result) {
         console.log("[Prayer Times] Using AlAdhan Dubai method (IACAD parameters)");
       }
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Cache the result
-  cache = { date: today, data: result };
+  cache = { key: cacheKey, date: today, data: result };
 
   return Response.json(result);
 }

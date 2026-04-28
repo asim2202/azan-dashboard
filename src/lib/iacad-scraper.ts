@@ -132,7 +132,15 @@ async function fetchIacadOfficial(timezone: string): Promise<Record<string, stri
 
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { Accept: "application/json" },
+      headers: {
+        // IACAD's API returns 500 to clients with no User-Agent (Node.js
+        // fetch's default). Mimic a normal browser request.
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Origin": "https://eservices.iacad.gov.ae",
+        "Referer": "https://eservices.iacad.gov.ae/prayer-time?lang=en",
+      },
     });
     clearTimeout(timeout);
     if (!res.ok) {

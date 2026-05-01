@@ -53,13 +53,21 @@ export function useAzan(
     audioRef.current = audio;
 
     audio.addEventListener("ended", () => {
-      // When azan audio finishes, hide the overlay and clear playing state.
-      // User asked for the popup to dismiss automatically at end of azan.
-      setState((prev) => ({
-        ...prev,
-        isPlaying: false,
-        showOverlay: false,
-      }));
+      // When audio finishes, hide overlay and clear playing state.
+      setState((prev) => ({ ...prev, isPlaying: false, showOverlay: false }));
+    });
+    // CRITICAL: also clear playing state on audio error. Without this, a
+    // failed pre-iqama or iqama playback (network blip while loading) leaves
+    // isPlaying stuck true, which blocks every subsequent azan trigger
+    // for the rest of the day.
+    audio.addEventListener("error", () => {
+      console.warn("[useAzan] audio error", audio.error);
+      setState((prev) => ({ ...prev, isPlaying: false, showOverlay: false }));
+    });
+    // Also catch the case where playback never starts (no canplay within 30s)
+    // by listening for stalled.
+    audio.addEventListener("stalled", () => {
+      console.warn("[useAzan] audio stalled");
     });
 
     return () => {
@@ -102,6 +110,8 @@ export function useAzan(
               audio.volume = volume;
               audio.play().catch((err) => {
                 console.error("[Pre-Iqama Alert] Playback failed:", err);
+                // play() rejected → audio.ended will never fire → MUST clear isPlaying ourselves
+                setState((prev) => ({ ...prev, isPlaying: false }));
               });
             }
             setState({
@@ -110,6 +120,13 @@ export function useAzan(
               showOverlay: false, // No overlay for pre-iqama alert
               iqamaCountdownEnd: null,
             });
+            // Hard ceiling: 5 min from now, force-clear isPlaying even if
+            // every event listener fails. Without this, a silently-stuck
+            // playback blocks every subsequent prayer for the rest of the day.
+            if (overlayHardTimerRef.current) clearTimeout(overlayHardTimerRef.current);
+            overlayHardTimerRef.current = setTimeout(() => {
+              setState((prev) => ({ ...prev, isPlaying: false, showOverlay: false }));
+            }, 5 * 60 * 1000);
             return;
           }
         }
@@ -130,14 +147,19 @@ export function useAzan(
             audio.volume = volume;
             audio.play().catch((err) => {
               console.error("[Iqama] Playback failed:", err);
+              setState((prev) => ({ ...prev, isPlaying: false }));
             });
           }
           setState({
             isPlaying: true,
             currentPrayer: prayer.name,
-            showOverlay: false, // No overlay for iqama, just sound
+            showOverlay: false,
             iqamaCountdownEnd: null,
           });
+          if (overlayHardTimerRef.current) clearTimeout(overlayHardTimerRef.current);
+          overlayHardTimerRef.current = setTimeout(() => {
+            setState((prev) => ({ ...prev, isPlaying: false, showOverlay: false }));
+          }, 5 * 60 * 1000);
           return;
         }
       }
@@ -158,6 +180,7 @@ export function useAzan(
           audio.volume = volume;
           audio.play().catch((err) => {
             console.error("[Azan] Playback failed:", err);
+            setState((prev) => ({ ...prev, isPlaying: false, showOverlay: false }));
           });
         }
 

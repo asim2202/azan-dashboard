@@ -77,11 +77,14 @@ export default function CameraFeed({ config }: CameraFeedProps) {
               )}`;
               setSource({ kind: "hls", m3u8Url });
             } else {
-              // media=video drops the audio track at negotiation time.
+              // media=video drops the audio track at SDP negotiation.
+              // muted=1 belt-and-braces: also tells go2rtc's embed player to
+              // start the <video> element muted so any fallback path that
+              // still negotiates audio can't make sound.
               // _wd cache-busts on watchdog reload.
               const playerUrl = `http://${host}:${port}/stream.html?src=${encodeURIComponent(
                 data.streamName
-              )}&mode=${encodeURIComponent(mode)}&media=video&_wd=${reloadKey}`;
+              )}&mode=${encodeURIComponent(mode)}&media=video&muted=1&_wd=${reloadKey}`;
               setSource({ kind: "go2rtc", playerUrl });
             }
             setError(false);
